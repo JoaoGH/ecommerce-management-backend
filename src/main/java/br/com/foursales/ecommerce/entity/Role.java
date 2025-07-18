@@ -1,16 +1,12 @@
 package br.com.foursales.ecommerce.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Getter;
-
-import java.util.HashSet;
-import java.util.Set;
+import lombok.Data;
 import java.util.UUID;
 
 @Entity
 @Table(name = "roles")
-@Getter
+@Data
 public class Role {
 
 	@Id
