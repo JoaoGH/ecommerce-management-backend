@@ -36,6 +36,10 @@ public abstract class DefaultCrudService<T, ID> {
 
 	@Transactional
 	public T update(ID id, T updatedEntity) {
+		if (id == null) {
+			throw new IllegalArgumentException("ID não pode ser nulo");
+		}
+
 		if (!getRepository().existsById(id)) {
 			throw new EntityNotFoundException("Entity not found with ID: " + id);
 		}
@@ -58,6 +62,10 @@ public abstract class DefaultCrudService<T, ID> {
 
 	@Transactional
 	public void delete(ID id) {
+		if (id == null) {
+			throw new IllegalArgumentException("ID não pode ser nulo");
+		}
+
 		if (!getRepository().existsById(id)) {
 			throw new EntityNotFoundException("Entity not found with ID: " + id);
 		}
