@@ -31,11 +31,11 @@ public class ProdutoService extends DefaultCrudService<Produto, UUID> {
 	}
 
 	protected void beforeSaveAndUpdate(Produto entity) {
-		if (entity.getQuantidadeEmEstoque() < 0) {
-			throw new RuntimeException("Valor inválido para quantidade de itens em estoque do produto.");
+		if (entity.getQuantidadeEmEstoque() == null || entity.getQuantidadeEmEstoque() < 0) {
+			throw new IllegalArgumentException("Valor inválido para quantidade de itens em estoque do produto.");
 		}
-		if (entity.getPreco().compareTo(BigDecimal.ZERO) < 0) {
-			throw new RuntimeException("Valor inválido para preço do produto.");
+		if (entity.getPreco() == null || entity.getPreco().compareTo(BigDecimal.ZERO) < 0) {
+			throw new IllegalArgumentException("Valor inválido para preço do produto.");
 		}
 	}
 }
