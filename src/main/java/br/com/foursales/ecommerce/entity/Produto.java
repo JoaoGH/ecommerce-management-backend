@@ -15,7 +15,7 @@ public class Produto extends AuditableEntity {
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 
-	@Column(nullable = false, length = 255)
+	@Column(nullable = false)
 	private String nome;
 
 	@Column(nullable = false)
@@ -24,10 +24,10 @@ public class Produto extends AuditableEntity {
 	@Column(nullable = false, precision = 10, scale = 2)
 	private BigDecimal preco;
 
-	@Column(nullable = false, length = 255)
+	@Column(nullable = false)
 	private String categoria;
 
-	@Column(nullable = false, length = 255)
+	@Column(nullable = false)
 	private Integer quantidadeEmEstoque;
 
 }
