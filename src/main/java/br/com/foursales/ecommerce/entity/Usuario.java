@@ -18,10 +18,7 @@ public class Usuario extends AuditableEntity {
 	@Column(nullable = false)
 	private String nome;
 
-	@Column(nullable = false)
-	private String login;
-
-	@Column(nullable = false)
+	@Column(nullable = false, unique = true)
 	private String email;
 
 	@Column(length = 300, nullable = false)
