@@ -230,6 +230,61 @@ public class PedidoServiceIntegrationTest {
 	}
 
 	@Test
+	public void deveCancelarPedidoPorSolicitante() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
+		Pedido pedido = pedidoService.createOrder(dto);
+
+		pedidoService.cancel(pedido.getId());
+
+		assertEquals(StatusPedido.CANCELADO, pedidoRepository.findById(pedido.getId()).get().getStatus());
+	}
+
+	@Test
+	public void naoDeveCancelarPedidoPagoPorSolicitante() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
+		Pedido pedido = pedidoService.createOrder(dto);
+		pedidoService.pay(pedido.getId());
+
+		assertThrows(IllegalArgumentException.class, () -> {
+			pedidoService.cancel(pedido.getId());
+		});
+	}
+
+	@Test
+	public void naoDeveCancelarPedidoCanceladoPorSolicitante() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
+		Pedido pedido = pedidoService.createOrder(dto);
+		pedidoService.cancel(pedido.getId());
+
+		assertThrows(IllegalArgumentException.class, () -> {
+			pedidoService.cancel(pedido.getId());
+		});
+	}
+
+	@Test
+	public void naoDeveCancelarPedidoDeOutroUsuario() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
+		Pedido pedido = pedidoService.createOrder(dto);
+		pedidoService.pay(pedido.getId());
+
+		Usuario outroUsuario = new Usuario();
+		outroUsuario.setNome("Outro Usuario");
+		outroUsuario.setEmail("outro_usuario@email.com");
+		outroUsuario.setSenha("senha");
+		outroUsuario.setRoles(Set.of(roleRepository.findAll().getFirst()));
+		usuarioService.save(outroUsuario);
+		Mockito.when(securityService.getCurrentUser()).thenReturn(outroUsuario);
+
+		assertThrows(IllegalArgumentException.class, () -> {
+			pedidoService.cancel(pedido.getId());
+		});
+	}
+
+	@Test
 	public void naoDeveCriarMesmoProdutoDuasVezesNoMesmoPedido() {
 		Produto produto = produtoRepository.findAll().getFirst();
 
