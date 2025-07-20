@@ -1,5 +1,6 @@
 package br.com.foursales.ecommerce.config;
 
+import br.com.foursales.ecommerce.enums.RolesPermitidas;
 import br.com.foursales.ecommerce.security.SecurityFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -34,9 +35,24 @@ public class SecurityConfiguration {
 				.sessionManagement((session) -> {
 					session.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 				})
-				.authorizeHttpRequests(authorize -> {
-					authorize.requestMatchers(HttpMethod.POST, "/auth/login").permitAll();
-					authorize.anyRequest().authenticated();
+				.authorizeHttpRequests(authorize -> { authorize
+						.requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+
+						.requestMatchers(HttpMethod.POST, "/produto").hasRole(RolesPermitidas.ADMIN.name())
+						.requestMatchers(HttpMethod.PUT, "/produto/**").hasRole(RolesPermitidas.ADMIN.name())
+						.requestMatchers(HttpMethod.DELETE, "/produto/**").hasRole(RolesPermitidas.ADMIN.name())
+
+						.requestMatchers(HttpMethod.POST, "/role").hasRole(RolesPermitidas.ADMIN.name())
+						.requestMatchers(HttpMethod.PUT, "/role/**").hasRole(RolesPermitidas.ADMIN.name())
+						.requestMatchers(HttpMethod.DELETE, "/role/**").hasRole(RolesPermitidas.ADMIN.name())
+						.requestMatchers(HttpMethod.GET, "/role/**").hasRole(RolesPermitidas.ADMIN.name())
+
+						.requestMatchers(HttpMethod.POST, "/usuario").hasRole(RolesPermitidas.ADMIN.name())
+						.requestMatchers(HttpMethod.PUT, "/usuario/**").hasRole(RolesPermitidas.ADMIN.name())
+						.requestMatchers(HttpMethod.DELETE, "/usuario/**").hasRole(RolesPermitidas.ADMIN.name())
+						.requestMatchers(HttpMethod.GET, "/usuario/**").hasRole(RolesPermitidas.ADMIN.name())
+
+						.anyRequest().authenticated();
 				})
 				.addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
 				.build();

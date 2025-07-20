@@ -7,7 +7,6 @@ import br.com.foursales.ecommerce.mappers.RoleMapper;
 import br.com.foursales.ecommerce.service.DefaultCrudService;
 import br.com.foursales.ecommerce.service.RoleService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -16,7 +15,6 @@ import java.util.UUID;
 @Controller
 @RequestMapping("/role")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ADMIN')")
 public class RoleController extends DefaultCrudController<Role, RoleDto, UUID> {
 
 	private final RoleService service;
