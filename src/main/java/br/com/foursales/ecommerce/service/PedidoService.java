@@ -153,14 +153,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 	}
 
 	protected Pedido validatePedidoBeforePay(UUID idPedido) {
-		if (idPedido == null) {
-			throw new IllegalArgumentException("Necessario informar o ID do Pedido.");
-		}
-
-		Pedido pedido = get(idPedido);
-		if (pedido == null) {
-			throw new EntityNotFoundException("Pedido não encontrado para o ID: " + idPedido);
-		}
+		Pedido pedido = getEntity(idPedido);
 
 		if (pedido.getStatus() == StatusPedido.PAGO) {
 			throw new IllegalArgumentException("O pagamento do pedido já foi realizado.");
@@ -185,4 +178,16 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 		return pedidoRepository.findAllByUsuario(securityService.getCurrentUser());
 	}
 
+	private Pedido getEntity(UUID uuid) {
+		if (uuid == null) {
+			throw new IllegalArgumentException("Necessario informar o ID do Pedido.");
+		}
+
+		Pedido pedido = get(uuid);
+		if (pedido == null) {
+			throw new EntityNotFoundException("Pedido não encontrado para o ID: " + uuid);
+		}
+
+		return pedido;
+	}
 }
