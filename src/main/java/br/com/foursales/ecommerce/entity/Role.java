@@ -7,7 +7,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "roles")
 @Data
-public class Role {
+public class Role implements Identifiable<UUID> {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
