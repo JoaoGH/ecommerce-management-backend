@@ -3,10 +3,7 @@ package br.com.foursales.ecommerce.service;
 
 import br.com.foursales.ecommerce.dto.ItemPedidoDTO;
 import br.com.foursales.ecommerce.dto.PedidoDto;
-import br.com.foursales.ecommerce.entity.Pedido;
-import br.com.foursales.ecommerce.entity.Produto;
-import br.com.foursales.ecommerce.entity.Role;
-import br.com.foursales.ecommerce.entity.Usuario;
+import br.com.foursales.ecommerce.entity.*;
 import br.com.foursales.ecommerce.enums.StatusPedido;
 import br.com.foursales.ecommerce.repository.*;
 import br.com.foursales.ecommerce.service.security.SecurityService;
@@ -230,6 +227,29 @@ public class PedidoServiceIntegrationTest {
 
 		PedidoDto pedido1Pago = pedidoService.pay(pedido1.getId());
 		assertEquals(StatusPedido.CANCELADO, pedido1Pago.status());
+	}
+
+	@Test
+	public void naoDeveCriarMesmoProdutoDuasVezesNoMesmoPedido() {
+		Produto produto = produtoRepository.findAll().getFirst();
+
+		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 3);
+		Pedido pedido = pedidoService.createOrder(dto);
+
+		assertEquals(pedido.getValorTotal(), BigDecimal.valueOf(370.35));
+
+		ItemPedidoDTO dto2 = new ItemPedidoDTO(pedido.getId(), produto.getId(), 3);
+		pedido = pedidoService.createOrder(dto2);
+
+		assertEquals(pedido.getValorTotal(), BigDecimal.valueOf(74070, 2));
+
+		List<PedidoItem> listaItens = pedidoItemRepository.findAll().stream().filter(item -> {
+			return item.getProduto().getId().equals(produto.getId());
+		}).toList();
+
+		assertEquals(1, listaItens.size());
+		assertEquals(6, listaItens.getFirst().getQuantidade());
+
 	}
 
 }

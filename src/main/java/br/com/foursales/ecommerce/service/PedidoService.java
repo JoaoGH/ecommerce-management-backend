@@ -38,10 +38,17 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 		Produto produto = getProduto(dto);
 		Pedido pedido = getPedido(dto, produto);
 
-		PedidoItem pedidoItem = new PedidoItem();
-		pedidoItem.setPedido(pedido);
-		pedidoItem.setProduto(produto);
-		pedidoItem.setQuantidade(dto.quantidade());
+		PedidoItem pedidoItem = pedidoItemRepository.findByPedidoAndProduto(pedido, produto);
+
+		if (pedidoItem == null) {
+			pedidoItem = new PedidoItem();
+			pedidoItem.setPedido(pedido);
+			pedidoItem.setProduto(produto);
+			pedidoItem.setQuantidade(dto.quantidade());
+		} else {
+			pedidoItem.setQuantidade(pedidoItem.getQuantidade() + dto.quantidade());
+		}
+
 		pedidoItem.setPrecoUnitario(produto.getPreco());
 
 		pedidoItemRepository.save(pedidoItem);
