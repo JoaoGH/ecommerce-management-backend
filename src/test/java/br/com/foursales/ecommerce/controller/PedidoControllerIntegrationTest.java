@@ -123,6 +123,44 @@ public class PedidoControllerIntegrationTest extends AbstractIntegrationTestSupp
 		assertEquals(403, status);
 	}
 
+	@Test
+	void deveCancelarPedidoComSucesso() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		String token = getAuthenticatedTokenUser();
+		UUID idPedido = createPedido(produto, 1, token);
+
+		MvcResult result = doRequest("DELETE", "/pedido/" + idPedido, null, token);
+		Integer status = result.getResponse().getStatus();
+
+		assertEquals(204, status);
+	}
+
+	@Test
+	void deveRetornar403AoCancelarPedidosSemAutenticacao() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		String token = getAuthenticatedTokenUser();
+		UUID idPedido = createPedido(produto, 1, token);
+
+		MvcResult result = doRequest("DELETE", "/pedido/" + idPedido, null, null);
+		Integer status = result.getResponse().getStatus();
+
+		assertEquals(403, status);
+	}
+
+	@Test
+	void naoDeveCancelarPedidoAlheio() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		String token = getAuthenticatedTokenUser();
+		UUID idPedido = createPedido(produto, 1, token);
+
+		String token2 = getAuthenticatedTokenAdmin();
+
+		MvcResult result = doRequest("DELETE", "/pedido/" + idPedido, null, token2);
+		Integer status = result.getResponse().getStatus();
+
+		assertEquals(500, status);
+	}
+
 	private UUID createPedido(Produto produto, Integer quantidade, String token) {
 		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), quantidade);
 		MvcResult result = doRequest("post", "/pedido", dto, token);

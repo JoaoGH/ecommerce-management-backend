@@ -35,7 +35,7 @@ public class PedidoController {
 	}
 
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> cancel(UUID id) {
+	public ResponseEntity<Void> cancel(@PathVariable UUID id) {
 		pedidoService.cancel(id);
 		return ResponseEntity.noContent().build();
 	}

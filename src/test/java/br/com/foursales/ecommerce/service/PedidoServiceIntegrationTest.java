@@ -122,6 +122,23 @@ public class PedidoServiceIntegrationTest {
 	}
 
 	@Test
+	public void naoDeveAddProdutoNoPedidoDeOutroUsuario() {
+		List<Produto> produtos = produtoRepository.findAll();
+
+		ItemPedidoDTO dto = new ItemPedidoDTO(null, produtos.get(0).getId(), 3);
+		Pedido pedido1 = pedidoService.createOrder(dto);
+
+		assertEquals(pedido1.getValorTotal(), BigDecimal.valueOf(370.35));
+
+		ItemPedidoDTO dto2 = new ItemPedidoDTO(pedido1.getId(), produtos.get(1).getId(), 3);
+
+		trocarUsuarioAtual();
+		assertThrows(IllegalArgumentException.class, () -> {
+			pedidoService.createOrder(dto2);
+		});
+	}
+
+	@Test
 	public void naoDeveCriarPedidoSemIdProduto() {
 		ItemPedidoDTO dto = new ItemPedidoDTO(null, null, 3);
 
@@ -174,6 +191,19 @@ public class PedidoServiceIntegrationTest {
 		assertDoesNotThrow(() -> {
 			PedidoDto pago = pedidoService.pay(pedido.getId());
 			assertEquals(StatusPedido.PAGO, pago.status());
+		});
+	}
+
+	@Test
+	public void naoDevePagarPedidoDeOutroUsuario() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
+		Pedido pedido = pedidoService.createOrder(dto);
+
+		trocarUsuarioAtual();
+
+		assertThrows(IllegalArgumentException.class, () -> {
+			pedidoService.pay(pedido.getId());
 		});
 	}
 
@@ -271,13 +301,7 @@ public class PedidoServiceIntegrationTest {
 		Pedido pedido = pedidoService.createOrder(dto);
 		pedidoService.pay(pedido.getId());
 
-		Usuario outroUsuario = new Usuario();
-		outroUsuario.setNome("Outro Usuario");
-		outroUsuario.setEmail("outro_usuario@email.com");
-		outroUsuario.setSenha("senha");
-		outroUsuario.setRoles(Set.of(roleRepository.findAll().getFirst()));
-		usuarioService.save(outroUsuario);
-		Mockito.when(securityService.getCurrentUser()).thenReturn(outroUsuario);
+		trocarUsuarioAtual();
 
 		assertThrows(IllegalArgumentException.class, () -> {
 			pedidoService.cancel(pedido.getId());
@@ -338,6 +362,16 @@ public class PedidoServiceIntegrationTest {
 		assertThrows(IllegalArgumentException.class, () -> {
 			pedidoService.pay(pedido1Pago.id());
 		});
+	}
+
+	private void trocarUsuarioAtual() {
+		Usuario usuario = new Usuario();
+		usuario.setNome("Outro Usuario");
+		usuario.setEmail("outro_usuario@email.com");
+		usuario.setSenha("senha");
+		usuario.setRoles(Set.of(roleRepository.findAll().getFirst()));
+		usuarioService.save(usuario);
+		Mockito.when(securityService.getCurrentUser()).thenReturn(usuario);
 	}
 
 
