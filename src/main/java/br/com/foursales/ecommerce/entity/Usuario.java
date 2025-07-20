@@ -9,7 +9,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "usuarios")
 @Data
-public class Usuario extends AuditableEntity {
+public class Usuario extends AuditableEntity implements Identifiable<UUID> {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)

@@ -2,6 +2,7 @@ package br.com.foursales.ecommerce.service;
 
 import br.com.foursales.ecommerce.entity.Role;
 import br.com.foursales.ecommerce.repository.RoleRepository;
+import br.com.foursales.ecommerce.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,8 +26,12 @@ public class RoleServiceIntegrationTest {
 	@Autowired
 	private RoleService roleService;
 
+	@Autowired
+	private UsuarioRepository usuarioRepository;
+
 	@BeforeEach
 	public void setUp() {
+		usuarioRepository.deleteAll();
 		roleRepository.deleteAll();
 
 		Role admin = new Role();

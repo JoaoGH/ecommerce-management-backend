@@ -8,6 +8,7 @@ import br.com.foursales.ecommerce.entity.Produto;
 import br.com.foursales.ecommerce.enums.StatusPedido;
 import br.com.foursales.ecommerce.repository.PedidoItemRepository;
 import br.com.foursales.ecommerce.repository.PedidoRepository;
+import br.com.foursales.ecommerce.service.security.SecurityService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,6 +26,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 	private final PedidoRepository pedidoRepository;
 	private final ProdutoService produtoService;
 	private final PedidoItemRepository pedidoItemRepository;
+	private final SecurityService securityService;
 
 	@Override
 	protected JpaRepository<Pedido, UUID> getRepository() {
@@ -90,7 +92,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 
 	@Override
 	protected void beforeSave(Pedido entity) {
-		entity.setUsuario(null); // todo add via springsecurity
+		entity.setUsuario(securityService.getCurrentUser());
 		entity.setStatus(StatusPedido.PENDENTE);
 	}
 
@@ -165,7 +167,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 
 	@Override
 	public List<Pedido> list() {
-		return pedidoRepository.findAllByUsuario(null); // todo add via springsecurity
+		return pedidoRepository.findAllByUsuario(securityService.getCurrentUser());
 	}
 
 }
