@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import java.util.List;
 import java.util.Set;
@@ -31,6 +32,8 @@ public class UsuarioServiceIntegrationTest {
 
 	@Autowired
 	private RoleService roleService;
+	@Autowired
+	private PasswordEncoder passwordEncoder;
 
 	@BeforeEach
 	void setUp() {
@@ -214,7 +217,18 @@ public class UsuarioServiceIntegrationTest {
 
 	@Test
 	public void deveCriptografarSenhaAoSalvarUsuario() {
-		// TODO: Adicionar assim que fizer a parte de segurança
+		Role role = roleRepository.findByNome("USER").orElseThrow();
+
+		Usuario usuario = new Usuario();
+		usuario.setNome("Novo Usuário");
+		usuario.setEmail("usuario_user@email.com");
+		usuario.setSenha("senha");
+		usuario.setRoles(Set.of(role));
+
+		usuario = usuarioService.save(usuario);
+
+		assertNotEquals("senha", usuario.getSenha());
+		assertTrue(passwordEncoder.matches("senha", usuario.getSenha()));
 	}
 
 }
