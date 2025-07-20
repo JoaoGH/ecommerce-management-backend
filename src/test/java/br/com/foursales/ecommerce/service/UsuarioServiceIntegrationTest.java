@@ -2,8 +2,7 @@ package br.com.foursales.ecommerce.service;
 
 import br.com.foursales.ecommerce.entity.Role;
 import br.com.foursales.ecommerce.entity.Usuario;
-import br.com.foursales.ecommerce.repository.RoleRepository;
-import br.com.foursales.ecommerce.repository.UsuarioRepository;
+import br.com.foursales.ecommerce.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,9 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -32,6 +30,7 @@ public class UsuarioServiceIntegrationTest {
 
 	@Autowired
 	private RoleService roleService;
+
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 

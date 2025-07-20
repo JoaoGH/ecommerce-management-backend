@@ -47,5 +47,9 @@ public class Usuario extends AuditableEntity implements Identifiable<UUID> {
 		return Objects.hash(id);
 	}
 
+	public Boolean isAdmin() {
+		return roles != null && roles.stream()
+				.anyMatch(role -> "ADMIN".equalsIgnoreCase(role.getNome()));
+	}
 
 }
