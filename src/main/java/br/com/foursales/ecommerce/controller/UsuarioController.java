@@ -16,7 +16,7 @@ import java.util.UUID;
 @Controller
 @RequestMapping("/usuario")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+@PreAuthorize("hasAnyRole('ADMIN')")
 public class UsuarioController extends DefaultCrudController<Usuario, UsuarioDto, UUID> {
 
 	private final UsuarioService service;

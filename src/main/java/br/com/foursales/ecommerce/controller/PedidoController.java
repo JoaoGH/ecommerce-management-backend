@@ -6,6 +6,7 @@ import br.com.foursales.ecommerce.entity.Pedido;
 import br.com.foursales.ecommerce.service.PedidoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +16,7 @@ import java.util.UUID;
 @Controller
 @RequestMapping("/pedido")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('ADMIN', 'USER')")
 public class PedidoController {
 
 	private final PedidoService pedidoService;
