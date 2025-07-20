@@ -9,12 +9,15 @@ import br.com.foursales.ecommerce.entity.Role;
 import br.com.foursales.ecommerce.entity.Usuario;
 import br.com.foursales.ecommerce.enums.StatusPedido;
 import br.com.foursales.ecommerce.repository.*;
+import br.com.foursales.ecommerce.service.security.SecurityService;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -41,12 +44,18 @@ public class PedidoServiceIntegrationTest {
 
 	@Autowired
 	private RoleService roleService;
+
 	@Autowired
 	private RoleRepository roleRepository;
+
 	@Autowired
 	private UsuarioRepository usuarioRepository;
+
 	@Autowired
 	private PedidoItemRepository pedidoItemRepository;
+
+	@MockitoBean
+	private SecurityService securityService;
 
 	@BeforeEach
 	public void setUp() {
@@ -82,6 +91,8 @@ public class PedidoServiceIntegrationTest {
 		usuario1.setSenha("senha");
 		usuario1.setRoles(Set.of(role1));
 		usuarioService.save(usuario1);
+
+		Mockito.when(securityService.getCurentUser()).thenReturn(usuario1);
 	}
 
 	@Test
