@@ -162,6 +162,14 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 			throw new EntityNotFoundException("Pedido não encontrado para o ID: " + idPedido);
 		}
 
+		if (pedido.getStatus() == StatusPedido.PAGO) {
+			throw new IllegalArgumentException("O pagamento do pedido já foi realizado.");
+		}
+
+		if (pedido.getStatus() == StatusPedido.CANCELADO) {
+			throw new IllegalArgumentException("O pedido já foi cancelado.");
+		}
+
 		for (PedidoItem item : pedidoItemRepository.findByPedido(pedido)) {
 			if (item.getQuantidade() > item.getProduto().getQuantidadeEmEstoque()) {
 				pedido.setStatus(StatusPedido.CANCELADO);

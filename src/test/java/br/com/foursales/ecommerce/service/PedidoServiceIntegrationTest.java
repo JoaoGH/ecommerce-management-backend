@@ -252,4 +252,38 @@ public class PedidoServiceIntegrationTest {
 
 	}
 
+	@Test
+	public void naoDevePermitirPagamentoDePedidoJaPago() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
+		Pedido pedido = pedidoService.createOrder(dto);
+
+		PedidoDto pago = pedidoService.pay(pedido.getId());
+		assertEquals(StatusPedido.PAGO, pago.status());
+
+		assertThrows(IllegalArgumentException.class, () -> {
+			pedidoService.pay(pedido.getId());
+		});
+	}
+
+	@Test
+	public void naoDevePermitirPagamentoDePedidoCancelado() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		ItemPedidoDTO dto1 = new ItemPedidoDTO(null, produto.getId(), 1);
+		Pedido pedido1 = pedidoService.createOrder(dto1);
+
+		ItemPedidoDTO dto2 = new ItemPedidoDTO(null, produto.getId(), 10);
+		Pedido pedido2 = pedidoService.createOrder(dto2);
+		PedidoDto pedido2Pago = pedidoService.pay(pedido2.getId());
+		assertEquals(StatusPedido.PAGO, pedido2Pago.status());
+
+		PedidoDto pedido1Pago = pedidoService.pay(pedido1.getId());
+		assertEquals(StatusPedido.CANCELADO, pedido1Pago.status());
+
+		assertThrows(IllegalArgumentException.class, () -> {
+			pedidoService.pay(pedido1Pago.id());
+		});
+	}
+
+
 }
