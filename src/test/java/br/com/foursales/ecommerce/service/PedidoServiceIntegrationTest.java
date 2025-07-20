@@ -92,7 +92,7 @@ public class PedidoServiceIntegrationTest {
 		usuario1.setRoles(Set.of(role1));
 		usuarioService.save(usuario1);
 
-		Mockito.when(securityService.getCurentUser()).thenReturn(usuario1);
+		Mockito.when(securityService.getCurrentUser()).thenReturn(usuario1);
 	}
 
 	@Test

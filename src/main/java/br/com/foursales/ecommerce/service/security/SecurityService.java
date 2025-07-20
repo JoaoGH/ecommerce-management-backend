@@ -23,7 +23,7 @@ public class SecurityService {
 	private final TokenService tokenService;
 	private final UsuarioRepository usuarioRepository;
 
-	public Usuario getCurentUser() {
+	public Usuario getCurrentUser() {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
 		if (authentication != null && authentication.getPrincipal() instanceof Usuario) {

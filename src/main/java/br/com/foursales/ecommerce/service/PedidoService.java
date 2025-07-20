@@ -92,7 +92,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 
 	@Override
 	protected void beforeSave(Pedido entity) {
-		entity.setUsuario(securityService.getCurentUser());
+		entity.setUsuario(securityService.getCurrentUser());
 		entity.setStatus(StatusPedido.PENDENTE);
 	}
 
@@ -167,7 +167,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 
 	@Override
 	public List<Pedido> list() {
-		return pedidoRepository.findAllByUsuario(securityService.getCurentUser());
+		return pedidoRepository.findAllByUsuario(securityService.getCurrentUser());
 	}
 
 }
