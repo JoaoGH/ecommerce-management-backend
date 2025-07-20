@@ -80,8 +80,4 @@ public class UsuarioService extends DefaultCrudService<Usuario, UUID> {
 		}
 	}
 
-	public Usuario findByEmail(String email) {
-		return repository.findByEmail(email).orElse(null);
-	}
-
 }

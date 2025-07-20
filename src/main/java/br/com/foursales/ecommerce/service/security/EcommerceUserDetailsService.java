@@ -2,7 +2,7 @@ package br.com.foursales.ecommerce.service.security;
 
 import br.com.foursales.ecommerce.entity.Role;
 import br.com.foursales.ecommerce.entity.Usuario;
-import br.com.foursales.ecommerce.service.UsuarioService;
+import br.com.foursales.ecommerce.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,11 +14,11 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class EcommerceUserDetailsService implements UserDetailsService {
 
-	private final UsuarioService usuarioService;
+	private final UsuarioRepository usuarioRepository;
 
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		Usuario usuario = usuarioService.findByEmail(username);
+		Usuario usuario = usuarioRepository.findByEmail(username).orElse(null);
 
 		if (usuario == null) {
 			throw new UsernameNotFoundException(username);
