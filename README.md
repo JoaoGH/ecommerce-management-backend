@@ -14,6 +14,7 @@ controle de estoque e consultas otimizadas em banco de dados.
 - Spring Boot 3.5.3
 - MySql LTS
 - Maven
+- Gradle
 - Docker
 - JWT
 - JUnit
@@ -79,7 +80,7 @@ Consultas SQL otimizadas com os seguintes endpoints:
 
 4. **Execute a aplicação**
    ```bash
-   ./mvnw spring-boot:run
+   ./gradlew bootRun
    ```
 
 ## Endpoints
