@@ -2,7 +2,7 @@ package br.com.foursales.ecommerce.controller;
 
 import br.com.foursales.ecommerce.AbstractIntegrationTestSupport;
 import br.com.foursales.ecommerce.dto.PedidoItemDto;
-import br.com.foursales.ecommerce.entity.Pedido;
+import br.com.foursales.ecommerce.dto.PedidoResponseDto;
 import br.com.foursales.ecommerce.entity.Produto;
 import br.com.foursales.ecommerce.repository.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,10 +58,10 @@ public class PedidoControllerIntegrationTest extends AbstractIntegrationTestSupp
 		String responseJson = getContentAsStringFromResponse(result.getResponse());
 		Integer status = result.getResponse().getStatus();
 
-		Pedido responseDto = (Pedido) readValue(responseJson, Pedido.class);
+		PedidoResponseDto responseDto = (PedidoResponseDto) readValue(responseJson, PedidoResponseDto.class);
 
 		assertEquals(200, status);
-		assertNotNull(responseDto.getId());
+		assertNotNull(responseDto.id());
 	}
 
 	@Test
@@ -166,9 +166,9 @@ public class PedidoControllerIntegrationTest extends AbstractIntegrationTestSupp
 		PedidoItemDto dto = new PedidoItemDto(null, produto.getId(), quantidade);
 		MvcResult result = doRequest("post", "/pedido", dto, token);
 		String responseJson = getContentAsStringFromResponse(result.getResponse());
-		Pedido responseDto = (Pedido) readValue(responseJson, Pedido.class);
+		PedidoResponseDto responseDto = (PedidoResponseDto) readValue(responseJson, PedidoResponseDto.class);
 
-		return responseDto.getId();
+		return responseDto.id();
 	}
 
 }
