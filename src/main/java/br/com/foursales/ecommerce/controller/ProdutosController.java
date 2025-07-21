@@ -1,9 +1,10 @@
 package br.com.foursales.ecommerce.controller;
 
 import br.com.foursales.ecommerce.dto.ProdutoDto;
+import br.com.foursales.ecommerce.dto.ProdutoResponseDto;
 import br.com.foursales.ecommerce.entity.Produto;
 import br.com.foursales.ecommerce.mappers.GenericMapper;
-import br.com.foursales.ecommerce.mappers.ProdutosMapper;
+import br.com.foursales.ecommerce.mappers.ProdutoMapper;
 import br.com.foursales.ecommerce.service.DefaultCrudService;
 import br.com.foursales.ecommerce.service.ProdutoService;
 import lombok.RequiredArgsConstructor;
@@ -15,10 +16,10 @@ import java.util.UUID;
 @Controller
 @RequestMapping("/produto")
 @RequiredArgsConstructor
-public class ProdutosController extends DefaultCrudController<Produto, ProdutoDto, UUID> {
+public class ProdutosController extends DefaultCrudController<Produto, ProdutoDto, ProdutoResponseDto, UUID> {
 
 	protected final ProdutoService service;
-	protected final ProdutosMapper mapper;
+	protected final ProdutoMapper mapper;
 
 	@Override
 	protected DefaultCrudService<Produto, UUID> getService() {
@@ -26,7 +27,7 @@ public class ProdutosController extends DefaultCrudController<Produto, ProdutoDt
 	}
 
 	@Override
-	protected GenericMapper<Produto, ProdutoDto> getMapper() {
+	protected GenericMapper<Produto, ProdutoDto, ProdutoResponseDto> getMapper() {
 		return mapper;
 	}
 }

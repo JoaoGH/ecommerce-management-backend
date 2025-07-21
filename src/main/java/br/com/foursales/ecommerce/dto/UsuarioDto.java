@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 public record UsuarioDto(
@@ -19,7 +18,6 @@ public record UsuarioDto(
 	String email,
 	@NotBlank(message = "Campo obrigatório")
 	String senha,
-	@NotBlank(message = "Campo obrigatório")
 	List<String> roles
 ) {
 }

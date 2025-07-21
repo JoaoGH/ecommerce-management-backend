@@ -1,6 +1,8 @@
 package br.com.foursales.ecommerce.mappers;
 
+import br.com.foursales.ecommerce.dto.RoleResponseDto;
 import br.com.foursales.ecommerce.dto.UsuarioDto;
+import br.com.foursales.ecommerce.dto.UsuarioResponseDto;
 import br.com.foursales.ecommerce.entity.Role;
 import br.com.foursales.ecommerce.entity.Usuario;
 import br.com.foursales.ecommerce.repository.RoleRepository;
@@ -13,7 +15,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring", uses = {RoleMapper.class})
-public abstract class UsuarioMapper implements GenericMapper<Usuario, UsuarioDto> {
+public abstract class UsuarioMapper implements GenericMapper<Usuario, UsuarioDto, UsuarioResponseDto> {
 
 	@Autowired
 	RoleRepository roleRepository;
@@ -36,5 +38,19 @@ public abstract class UsuarioMapper implements GenericMapper<Usuario, UsuarioDto
 		return roles.stream()
 				.map(nome -> roleRepository.findByNome(nome).orElse(null))
 				.collect(Collectors.toSet());
+	}
+
+	@Override
+	public List<UsuarioResponseDto> toResponseList(List<Usuario> entities) {
+		return entities.stream().map(this::toResponse).toList();
+	}
+
+	@Override
+	public UsuarioResponseDto toResponse(Usuario entity) {
+		List<RoleResponseDto> roleResponses = entity.getRoles().stream()
+				.map(role -> new RoleResponseDto(role.getNome()))
+				.toList();
+
+		return new UsuarioResponseDto(entity.getId(), entity.getNome(), entity.getEmail(), roleResponses);
 	}
 }

@@ -1,9 +1,11 @@
 package br.com.foursales.ecommerce.service;
 
 import br.com.foursales.ecommerce.entity.Usuario;
+import br.com.foursales.ecommerce.exception.DefaultApiException;
 import br.com.foursales.ecommerce.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -48,7 +50,7 @@ public class UsuarioService extends DefaultCrudService<Usuario, UUID> {
 
 	private void validatePassword(Usuario entity) {
 		if (entity.getSenha() == null || entity.getSenha().isEmpty()) {
-			throw new IllegalArgumentException("Senha deve ser preenchida.");
+			throw new DefaultApiException("Senha deve ser preenchida.", HttpStatus.BAD_REQUEST);
 		}
 
 		entity.setSenha(encoder.encode(entity.getSenha()));
@@ -58,25 +60,25 @@ public class UsuarioService extends DefaultCrudService<Usuario, UUID> {
 		String email = entity.getEmail().toLowerCase();
 
 		if (email == null || email.isBlank()) {
-			throw new IllegalArgumentException("E-mail deve ser preenchido.");
+			throw new DefaultApiException("E-mail deve ser preenchido.", HttpStatus.BAD_REQUEST);
 		}
 
 		if (!EMAIL_PATTERN.matcher(email).matches()) {
-			throw new IllegalArgumentException("E-mail inválido.");
+			throw new DefaultApiException("E-mail inválido.", HttpStatus.BAD_REQUEST);
 		}
 
 		entity.setEmail(email);
 
 		repository.findByEmail(entity.getEmail()).ifPresent(usuario -> {
 			if (!usuario.getId().equals(entity.getId())) {
-				throw new IllegalArgumentException("E-mail já em uso.");
+				throw new DefaultApiException("E-mail já em uso.", HttpStatus.UNPROCESSABLE_ENTITY);
 			}
 		});
 	}
 
 	private void validateRoles(Usuario entity) {
 		if (entity.getRoles() == null || entity.getRoles().isEmpty()) {
-			throw new IllegalArgumentException("Necessario haver ao menois uma Role.");
+			throw new DefaultApiException("Necessario haver ao menos uma Role.", HttpStatus.BAD_REQUEST);
 		}
 	}
 

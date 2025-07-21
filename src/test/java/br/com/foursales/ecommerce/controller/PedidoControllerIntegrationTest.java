@@ -1,7 +1,7 @@
 package br.com.foursales.ecommerce.controller;
 
 import br.com.foursales.ecommerce.AbstractIntegrationTestSupport;
-import br.com.foursales.ecommerce.dto.ItemPedidoDTO;
+import br.com.foursales.ecommerce.dto.PedidoItemDto;
 import br.com.foursales.ecommerce.entity.Pedido;
 import br.com.foursales.ecommerce.entity.Produto;
 import br.com.foursales.ecommerce.repository.*;
@@ -52,7 +52,7 @@ public class PedidoControllerIntegrationTest extends AbstractIntegrationTestSupp
 		String token = getAuthenticatedTokenUser();
 
 		Produto produto = produtoRepository.findAll().getFirst();
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
+		PedidoItemDto dto = new PedidoItemDto(null, produto.getId(), 1);
 
 		MvcResult result = doRequest("post", "/pedido", dto, token);
 		String responseJson = getContentAsStringFromResponse(result.getResponse());
@@ -67,7 +67,7 @@ public class PedidoControllerIntegrationTest extends AbstractIntegrationTestSupp
 	@Test
 	void deveRetornar403AoCriarPedidoSemAutenticacao() {
 		Produto produto = produtoRepository.findAll().getFirst();
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
+		PedidoItemDto dto = new PedidoItemDto(null, produto.getId(), 1);
 
 		MvcResult result = doRequest("post", "/pedido", dto);
 		Integer status = result.getResponse().getStatus();
@@ -81,7 +81,7 @@ public class PedidoControllerIntegrationTest extends AbstractIntegrationTestSupp
 		String token = getAuthenticatedTokenUser();
 		UUID idPedido = createPedido(produto, 1, token);
 
-		MvcResult result = doRequest("put", "/pedido", idPedido, token);
+		MvcResult result = doRequest("put", "/pedido/" + idPedido, null, token);
 		Integer status = result.getResponse().getStatus();
 
 		assertEquals(200, status);
@@ -90,9 +90,10 @@ public class PedidoControllerIntegrationTest extends AbstractIntegrationTestSupp
 	@Test
 	void deveRetornar403AoPagarPedidoSemAutenticacao() {
 		Produto produto = produtoRepository.findAll().getFirst();
-		ItemPedidoDTO dto = new ItemPedidoDTO(UUID.randomUUID(), produto.getId(), 1);
+		String token = getAuthenticatedTokenUser();
+		UUID idPedido = createPedido(produto, 1, token);
 
-		MvcResult result = doRequest("put", "/pedido", dto);
+		MvcResult result = doRequest("put", "/pedido/" + idPedido, null);
 		Integer status = result.getResponse().getStatus();
 
 		assertEquals(403, status);
@@ -162,7 +163,7 @@ public class PedidoControllerIntegrationTest extends AbstractIntegrationTestSupp
 	}
 
 	private UUID createPedido(Produto produto, Integer quantidade, String token) {
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), quantidade);
+		PedidoItemDto dto = new PedidoItemDto(null, produto.getId(), quantidade);
 		MvcResult result = doRequest("post", "/pedido", dto, token);
 		String responseJson = getContentAsStringFromResponse(result.getResponse());
 		Pedido responseDto = (Pedido) readValue(responseJson, Pedido.class);

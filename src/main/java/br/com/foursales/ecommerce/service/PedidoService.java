@@ -1,17 +1,19 @@
 package br.com.foursales.ecommerce.service;
 
-import br.com.foursales.ecommerce.dto.ItemPedidoDTO;
-import br.com.foursales.ecommerce.dto.PedidoDto;
+import br.com.foursales.ecommerce.dto.*;
 import br.com.foursales.ecommerce.entity.Pedido;
 import br.com.foursales.ecommerce.entity.PedidoItem;
 import br.com.foursales.ecommerce.entity.Produto;
 import br.com.foursales.ecommerce.enums.StatusPedido;
+import br.com.foursales.ecommerce.exception.DefaultApiException;
+import br.com.foursales.ecommerce.mappers.PedidoMapper;
 import br.com.foursales.ecommerce.repository.PedidoItemRepository;
 import br.com.foursales.ecommerce.repository.PedidoRepository;
 import br.com.foursales.ecommerce.service.security.SecurityService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 	private final ProdutoService produtoService;
 	private final PedidoItemRepository pedidoItemRepository;
 	private final SecurityService securityService;
+	private final PedidoMapper pedidoMapper;
 
 	@Override
 	protected JpaRepository<Pedido, UUID> getRepository() {
@@ -34,7 +37,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 	}
 
 	@Transactional
-	public Pedido createOrder(ItemPedidoDTO dto) {
+	public PedidoResponseDto createOrder(PedidoItemDto dto) {
 		Produto produto = getProduto(dto);
 		Pedido pedido = getPedido(dto, produto);
 
@@ -55,15 +58,15 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 
 		update(pedido.getId(), pedido);
 
-		return pedido;
+		return pedidoMapper.toResponse(pedido);
 	}
 
-	protected Produto getProduto(ItemPedidoDTO dto) {
+	protected Produto getProduto(PedidoItemDto dto) {
 		if (dto.idProduto() == null) {
-			throw new IllegalArgumentException("Necessario informar o ID do produto.");
+			throw new DefaultApiException("Necessario informar o ID do produto.", HttpStatus.BAD_REQUEST);
 		}
 		if (dto.quantidade() == null || dto.quantidade() < 1) {
-			throw new IllegalArgumentException("Necessario informar uma quantidade valida para o produto.");
+			throw new DefaultApiException("Necessario informar uma quantidade valida para o produto.", HttpStatus.BAD_REQUEST);
 		}
 
 		Produto produto = produtoService.get(dto.idProduto());
@@ -72,27 +75,25 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 		}
 
 		if (dto.quantidade() > produto.getQuantidadeEmEstoque()) {
-			throw new IllegalArgumentException("Quantidade de estoque insuficiente");
+			throw new DefaultApiException("Quantidade de estoque insuficiente", HttpStatus.UNPROCESSABLE_ENTITY);
 		}
 
 		return produto;
 	}
 
 	@Transactional
-	protected Pedido getPedido(ItemPedidoDTO itemPedidoDTO, Produto produto) {
+	protected Pedido getPedido(PedidoItemDto pedidoItemDto, Produto produto) {
 		Pedido pedido;
 
-		if (itemPedidoDTO.idPedido() != null) {
-			pedido = get(itemPedidoDTO.idPedido());
+		if (pedidoItemDto.idPedido() != null) {
+			pedido = get(pedidoItemDto.idPedido());
 			if (pedido == null) {
-				throw new EntityNotFoundException("Entity not found with ID: " + itemPedidoDTO.idPedido());
+				throw new EntityNotFoundException("Produto não encontrado com o ID: " + pedidoItemDto.idPedido());
 			}
-			if (!pedido.getUsuario().equals(securityService.getCurrentUser())) {
-				throw new IllegalArgumentException("Não pode manipular o pedido de outro usuário.");
-			}
+			checkCanManipulatePedido(pedido);
 		} else {
 			pedido = new Pedido();
-			BigDecimal valorTotal = produto.getPreco().multiply(BigDecimal.valueOf(itemPedidoDTO.quantidade()));
+			BigDecimal valorTotal = produto.getPreco().multiply(BigDecimal.valueOf(pedidoItemDto.quantidade()));
 			pedido.setValorTotal(valorTotal);
 			save(pedido);
 		}
@@ -123,42 +124,31 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 	}
 
 	@Transactional
-	public PedidoDto pay(UUID idPedido) {
+	public PedidoResponseDto pay(UUID idPedido) {
 		Pedido pedido = validatePedidoBeforePay(idPedido);
 
+		List<PedidoItem> pedidoItems = pedidoItemRepository.findByPedido(pedido);
+
 		if (pedido.getStatus() == StatusPedido.CANCELADO) {
-			PedidoDto pedidoDto = new PedidoDto(
-					pedido.getId(),
-					pedido.getUsuario(),
-					pedido.getStatus(),
-					pedido.getValorTotal()
-			);
-			return pedidoDto;
+			return pedidoMapper.toResponse(pedido);
 		}
 
 		pedido.setStatus(StatusPedido.PAGO);
 		update(pedido.getId(), pedido);
 
-		for (PedidoItem item : pedidoItemRepository.findByPedido(pedido)) {
+		for (PedidoItem item : pedidoItems) {
 			Produto produto = item.getProduto();
 			produto.setQuantidadeEmEstoque(produto.getQuantidadeEmEstoque() - item.getQuantidade());
 			produtoService.update(produto.getId(), produto);
 		}
 
-		PedidoDto pedidoDto = new PedidoDto(
-				pedido.getId(),
-				pedido.getUsuario(),
-				pedido.getStatus(),
-				pedido.getValorTotal()
-		);
-
-		return pedidoDto;
+		return pedidoMapper.toResponse(pedido);
 	}
 
 	protected Pedido validatePedidoBeforePay(UUID idPedido) {
 		Pedido pedido = getEntity(idPedido);
 
-		verifyCanChangeStatus(pedido);
+		checkCanManipulatePedido(pedido);
 
 		for (PedidoItem item : pedidoItemRepository.findByPedido(pedido)) {
 			if (item.getQuantidade() > item.getProduto().getQuantidadeEmEstoque()) {
@@ -175,9 +165,13 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 		return pedidoRepository.findAllByUsuario(securityService.getCurrentUser());
 	}
 
+	public List<PedidoResponseDto> listar() {
+		return pedidoMapper.toResponseList(list());
+	}
+
 	private Pedido getEntity(UUID uuid) {
 		if (uuid == null) {
-			throw new IllegalArgumentException("Necessario informar o ID do Pedido.");
+			throw new DefaultApiException("Necessario informar o ID do Pedido.", HttpStatus.BAD_REQUEST);
 		}
 
 		Pedido pedido = get(uuid);
@@ -188,28 +182,27 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 		return pedido;
 	}
 
-	public void verifyCanChangeStatus(Pedido pedido) {
+	public void checkCanManipulatePedido(Pedido pedido) {
 		if (!pedido.getUsuario().equals(securityService.getCurrentUser())) {
-			throw new IllegalArgumentException("Não pode manipular o pedido de outro usuário.");
+			throw new DefaultApiException("Não pode manipular o pedido de outro usuário.", HttpStatus.BAD_REQUEST);
 		}
 
 		if (pedido.getStatus() == StatusPedido.PAGO) {
-			throw new IllegalArgumentException("O pagamento do pedido já foi realizado.");
+			throw new DefaultApiException("O pagamento do pedido já foi realizado.", HttpStatus.BAD_REQUEST);
 		}
 
 		if (pedido.getStatus() == StatusPedido.CANCELADO) {
-			throw new IllegalArgumentException("O pedido já foi cancelado.");
+			throw new DefaultApiException("O pedido já foi cancelado.", HttpStatus.BAD_REQUEST);
 		}
 	}
 
 	public void cancel(UUID idPedido) {
 		Pedido pedido = getEntity(idPedido);
 
-		verifyCanChangeStatus(pedido);
+		checkCanManipulatePedido(pedido);
 
 		pedido.setStatus(StatusPedido.CANCELADO);
 		update(pedido.getId(), pedido);
 	}
-
 
 }

@@ -1,6 +1,7 @@
 package br.com.foursales.ecommerce.service.security;
 
 import br.com.foursales.ecommerce.entity.Usuario;
+import br.com.foursales.ecommerce.exception.DefaultApiException;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
@@ -39,7 +40,7 @@ public class TokenService {
 					.withExpiresAt(expiresAt)
 					.sign(algorithm);
 		} catch (JWTCreationException e) {
-			throw new RuntimeException("Erro ao gerar token", e);
+			throw new DefaultApiException("Erro ao gerar token");
 		}
 	}
 

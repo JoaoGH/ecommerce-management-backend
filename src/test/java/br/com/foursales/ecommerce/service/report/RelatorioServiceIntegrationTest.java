@@ -1,9 +1,9 @@
 package br.com.foursales.ecommerce.service.report;
 
-import br.com.foursales.ecommerce.dto.ItemPedidoDTO;
+import br.com.foursales.ecommerce.dto.PedidoItemDto;
+import br.com.foursales.ecommerce.dto.PedidoResponseDto;
 import br.com.foursales.ecommerce.dto.report.UsuarioTicketMedioDto;
 import br.com.foursales.ecommerce.dto.report.UsuarioTopCompradorDto;
-import br.com.foursales.ecommerce.entity.Pedido;
 import br.com.foursales.ecommerce.entity.Produto;
 import br.com.foursales.ecommerce.entity.Role;
 import br.com.foursales.ecommerce.entity.Usuario;
@@ -162,15 +162,15 @@ public class RelatorioServiceIntegrationTest {
 						? pedidosPorUsuario.get(usuario.getId())
 						: null;
 
-				ItemPedidoDTO itemPedidoDTO = new ItemPedidoDTO(
+				PedidoItemDto pedidoItemDto = new PedidoItemDto(
 						idPedido,
 						produtoEscolhido.getId(),
 						quantidade
 				);
 
-				Pedido pedido = pedidoService.createOrder(itemPedidoDTO);
+				PedidoResponseDto pedido = pedidoService.createOrder(pedidoItemDto);
 				if (idPedido == null) {
-					pedidosPorUsuario.put(usuario.getId(), pedido.getId());
+					pedidosPorUsuario.put(usuario.getId(), pedido.id());
 				}
 			}
 		}

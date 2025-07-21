@@ -2,9 +2,11 @@ package br.com.foursales.ecommerce.service;
 
 import br.com.foursales.ecommerce.entity.Role;
 import br.com.foursales.ecommerce.enums.RolesPermitidas;
+import br.com.foursales.ecommerce.exception.DefaultApiException;
 import br.com.foursales.ecommerce.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -24,7 +26,7 @@ public class RoleService extends DefaultCrudService<Role, UUID> {
 	@Override
 	protected void beforeSave(Role entity) {
 		if (entity.getNome() == null || entity.getNome().isBlank()) {
-			throw new IllegalArgumentException("O nome da role não pode ser nulo ou vazio.");
+			throw new DefaultApiException("O nome da role não pode ser nulo ou vazio.", HttpStatus.BAD_REQUEST);
 		}
 
 		entity.setNome(entity.getNome().toUpperCase());
@@ -33,7 +35,7 @@ public class RoleService extends DefaultCrudService<Role, UUID> {
 				.anyMatch(r -> r.name().equals(entity.getNome()));
 
 		if (!nomeValido) {
-			throw new IllegalArgumentException("Nome de role inválido: " + entity.getNome());
+			throw new DefaultApiException("Nome de role inválido: " + entity.getNome(), HttpStatus.BAD_REQUEST);
 		}
 	}
 }

@@ -2,7 +2,7 @@ package br.com.foursales.ecommerce.dto;
 
 import java.util.UUID;
 
-public record ItemPedidoDTO(
+public record PedidoItemDto(
 		UUID idPedido,
 		UUID idProduto,
 		Integer quantidade
