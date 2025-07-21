@@ -7,6 +7,6 @@ public record UsuarioResponseDto(
 		UUID id,
 		String nome,
 		String email,
-		List<RoleResponseDto> roles
+		List<String> roles
 ) {
 }
