@@ -83,7 +83,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 		PedidoItem pedidoItem = pedidoItemRepository.findByPedidoAndProduto(pedido, produto);
 		if ((dto.quantidade() + pedidoItem.getQuantidade()) > produto.getQuantidadeEmEstoque()) {
 			pedido.setStatus(StatusPedido.CANCELADO);
-			pedido.setObservacao("Quantidade de estoque insuficiente. Pedido cancelado.");
+			pedido.setObservacao(EstoqueInsuficiente.MESSAGE);
 			update(pedido.getId(), pedido);
 			throw new EstoqueInsuficiente(pedido);
 		}
@@ -150,9 +150,19 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 			Produto produto = item.getProduto();
 			produto.setQuantidadeEmEstoque(produto.getQuantidadeEmEstoque() - item.getQuantidade());
 			produtoService.update(produto.getId(), produto);
+			cancelarOutroPedidos(pedido, produto);
 		}
 
 		return pedidoMapper.toResponse(pedido);
+	}
+
+	private void cancelarOutroPedidos(Pedido pedido, Produto produto) {
+		List<Pedido> pedidosParaCancelar = pedidoItemRepository.findAllByPedidoNotAndProduto(pedido, produto);
+		for (Pedido pedidoCancelar : pedidosParaCancelar) {
+			pedidoCancelar.setStatus(StatusPedido.CANCELADO);
+			pedidoCancelar.setObservacao(EstoqueInsuficiente.MESSAGE);
+			update(pedidoCancelar.getId(), pedidoCancelar);
+		}
 	}
 
 	protected Pedido validatePedidoBeforePay(UUID idPedido) {

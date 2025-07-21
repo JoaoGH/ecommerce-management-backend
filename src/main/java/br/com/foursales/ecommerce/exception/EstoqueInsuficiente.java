@@ -5,10 +5,12 @@ import org.springframework.http.HttpStatus;
 
 public class EstoqueInsuficiente extends DefaultApiException {
 
+	public final static String MESSAGE = "Quantidade de estoque insuficiente. Pedido cancelado.";
+
 	private Pedido pedido;
 
 	public EstoqueInsuficiente(Pedido pedido) {
-		super("Quantidade de estoque insuficiente. Pedido cancelado.", HttpStatus.UNPROCESSABLE_ENTITY);
+		super(MESSAGE, HttpStatus.UNPROCESSABLE_ENTITY);
 		this.pedido = pedido;
 	}
 
