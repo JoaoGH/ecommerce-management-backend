@@ -38,10 +38,17 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 		Produto produto = getProduto(dto);
 		Pedido pedido = getPedido(dto, produto);
 
-		PedidoItem pedidoItem = new PedidoItem();
-		pedidoItem.setPedido(pedido);
-		pedidoItem.setProduto(produto);
-		pedidoItem.setQuantidade(dto.quantidade());
+		PedidoItem pedidoItem = pedidoItemRepository.findByPedidoAndProduto(pedido, produto);
+
+		if (pedidoItem == null) {
+			pedidoItem = new PedidoItem();
+			pedidoItem.setPedido(pedido);
+			pedidoItem.setProduto(produto);
+			pedidoItem.setQuantidade(dto.quantidade());
+		} else {
+			pedidoItem.setQuantidade(pedidoItem.getQuantidade() + dto.quantidade());
+		}
+
 		pedidoItem.setPrecoUnitario(produto.getPreco());
 
 		pedidoItemRepository.save(pedidoItem);
@@ -79,6 +86,9 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 			pedido = get(itemPedidoDTO.idPedido());
 			if (pedido == null) {
 				throw new EntityNotFoundException("Entity not found with ID: " + itemPedidoDTO.idPedido());
+			}
+			if (!pedido.getUsuario().equals(securityService.getCurrentUser())) {
+				throw new IllegalArgumentException("Não pode manipular o pedido de outro usuário.");
 			}
 		} else {
 			pedido = new Pedido();
@@ -146,14 +156,9 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 	}
 
 	protected Pedido validatePedidoBeforePay(UUID idPedido) {
-		if (idPedido == null) {
-			throw new IllegalArgumentException("Necessario informar o ID do Pedido.");
-		}
+		Pedido pedido = getEntity(idPedido);
 
-		Pedido pedido = get(idPedido);
-		if (pedido == null) {
-			throw new EntityNotFoundException("Pedido não encontrado para o ID: " + idPedido);
-		}
+		verifyCanChangeStatus(pedido);
 
 		for (PedidoItem item : pedidoItemRepository.findByPedido(pedido)) {
 			if (item.getQuantidade() > item.getProduto().getQuantidadeEmEstoque()) {
@@ -169,5 +174,42 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 	public List<Pedido> list() {
 		return pedidoRepository.findAllByUsuario(securityService.getCurrentUser());
 	}
+
+	private Pedido getEntity(UUID uuid) {
+		if (uuid == null) {
+			throw new IllegalArgumentException("Necessario informar o ID do Pedido.");
+		}
+
+		Pedido pedido = get(uuid);
+		if (pedido == null) {
+			throw new EntityNotFoundException("Pedido não encontrado para o ID: " + uuid);
+		}
+
+		return pedido;
+	}
+
+	public void verifyCanChangeStatus(Pedido pedido) {
+		if (!pedido.getUsuario().equals(securityService.getCurrentUser())) {
+			throw new IllegalArgumentException("Não pode manipular o pedido de outro usuário.");
+		}
+
+		if (pedido.getStatus() == StatusPedido.PAGO) {
+			throw new IllegalArgumentException("O pagamento do pedido já foi realizado.");
+		}
+
+		if (pedido.getStatus() == StatusPedido.CANCELADO) {
+			throw new IllegalArgumentException("O pedido já foi cancelado.");
+		}
+	}
+
+	public void cancel(UUID idPedido) {
+		Pedido pedido = getEntity(idPedido);
+
+		verifyCanChangeStatus(pedido);
+
+		pedido.setStatus(StatusPedido.CANCELADO);
+		update(pedido.getId(), pedido);
+	}
+
 
 }

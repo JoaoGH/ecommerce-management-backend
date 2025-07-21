@@ -52,6 +52,8 @@ public class SecurityConfiguration {
 						.requestMatchers(HttpMethod.DELETE, "/usuario/**").hasRole(RolesPermitidas.ADMIN.name())
 						.requestMatchers(HttpMethod.GET, "/usuario/**").hasRole(RolesPermitidas.ADMIN.name())
 
+						.requestMatchers(HttpMethod.GET, "/relatorio/**").hasRole(RolesPermitidas.ADMIN.name())
+
 						.anyRequest().authenticated();
 				})
 				.addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)

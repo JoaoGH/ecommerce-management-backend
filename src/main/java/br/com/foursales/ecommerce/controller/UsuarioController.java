@@ -29,5 +29,6 @@ public class UsuarioController extends DefaultCrudController<Usuario, UsuarioDto
 	protected GenericMapper<Usuario, UsuarioDto> getMapper() {
 		return mapper;
 	}
+
 }
 

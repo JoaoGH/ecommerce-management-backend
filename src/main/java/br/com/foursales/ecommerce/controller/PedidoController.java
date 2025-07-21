@@ -34,4 +34,10 @@ public class PedidoController {
 		return ResponseEntity.ok(pedidoService.list());
 	}
 
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Void> cancel(@PathVariable UUID id) {
+		pedidoService.cancel(id);
+		return ResponseEntity.noContent().build();
+	}
+
 }

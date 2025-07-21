@@ -3,10 +3,7 @@ package br.com.foursales.ecommerce.service;
 
 import br.com.foursales.ecommerce.dto.ItemPedidoDTO;
 import br.com.foursales.ecommerce.dto.PedidoDto;
-import br.com.foursales.ecommerce.entity.Pedido;
-import br.com.foursales.ecommerce.entity.Produto;
-import br.com.foursales.ecommerce.entity.Role;
-import br.com.foursales.ecommerce.entity.Usuario;
+import br.com.foursales.ecommerce.entity.*;
 import br.com.foursales.ecommerce.enums.StatusPedido;
 import br.com.foursales.ecommerce.repository.*;
 import br.com.foursales.ecommerce.service.security.SecurityService;
@@ -125,6 +122,23 @@ public class PedidoServiceIntegrationTest {
 	}
 
 	@Test
+	public void naoDeveAddProdutoNoPedidoDeOutroUsuario() {
+		List<Produto> produtos = produtoRepository.findAll();
+
+		ItemPedidoDTO dto = new ItemPedidoDTO(null, produtos.get(0).getId(), 3);
+		Pedido pedido1 = pedidoService.createOrder(dto);
+
+		assertEquals(pedido1.getValorTotal(), BigDecimal.valueOf(370.35));
+
+		ItemPedidoDTO dto2 = new ItemPedidoDTO(pedido1.getId(), produtos.get(1).getId(), 3);
+
+		trocarUsuarioAtual();
+		assertThrows(IllegalArgumentException.class, () -> {
+			pedidoService.createOrder(dto2);
+		});
+	}
+
+	@Test
 	public void naoDeveCriarPedidoSemIdProduto() {
 		ItemPedidoDTO dto = new ItemPedidoDTO(null, null, 3);
 
@@ -181,6 +195,19 @@ public class PedidoServiceIntegrationTest {
 	}
 
 	@Test
+	public void naoDevePagarPedidoDeOutroUsuario() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
+		Pedido pedido = pedidoService.createOrder(dto);
+
+		trocarUsuarioAtual();
+
+		assertThrows(IllegalArgumentException.class, () -> {
+			pedidoService.pay(pedido.getId());
+		});
+	}
+
+	@Test
 	public void naoDevePagarPedidoIdInvalido() {
 		Produto produto = produtoRepository.findAll().getFirst();
 		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
@@ -231,5 +258,121 @@ public class PedidoServiceIntegrationTest {
 		PedidoDto pedido1Pago = pedidoService.pay(pedido1.getId());
 		assertEquals(StatusPedido.CANCELADO, pedido1Pago.status());
 	}
+
+	@Test
+	public void deveCancelarPedidoPorSolicitante() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
+		Pedido pedido = pedidoService.createOrder(dto);
+
+		pedidoService.cancel(pedido.getId());
+
+		assertEquals(StatusPedido.CANCELADO, pedidoRepository.findById(pedido.getId()).get().getStatus());
+	}
+
+	@Test
+	public void naoDeveCancelarPedidoPagoPorSolicitante() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
+		Pedido pedido = pedidoService.createOrder(dto);
+		pedidoService.pay(pedido.getId());
+
+		assertThrows(IllegalArgumentException.class, () -> {
+			pedidoService.cancel(pedido.getId());
+		});
+	}
+
+	@Test
+	public void naoDeveCancelarPedidoCanceladoPorSolicitante() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
+		Pedido pedido = pedidoService.createOrder(dto);
+		pedidoService.cancel(pedido.getId());
+
+		assertThrows(IllegalArgumentException.class, () -> {
+			pedidoService.cancel(pedido.getId());
+		});
+	}
+
+	@Test
+	public void naoDeveCancelarPedidoDeOutroUsuario() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
+		Pedido pedido = pedidoService.createOrder(dto);
+		pedidoService.pay(pedido.getId());
+
+		trocarUsuarioAtual();
+
+		assertThrows(IllegalArgumentException.class, () -> {
+			pedidoService.cancel(pedido.getId());
+		});
+	}
+
+	@Test
+	public void naoDeveCriarMesmoProdutoDuasVezesNoMesmoPedido() {
+		Produto produto = produtoRepository.findAll().getFirst();
+
+		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 3);
+		Pedido pedido = pedidoService.createOrder(dto);
+
+		assertEquals(pedido.getValorTotal(), BigDecimal.valueOf(370.35));
+
+		ItemPedidoDTO dto2 = new ItemPedidoDTO(pedido.getId(), produto.getId(), 3);
+		pedido = pedidoService.createOrder(dto2);
+
+		assertEquals(pedido.getValorTotal(), BigDecimal.valueOf(74070, 2));
+
+		List<PedidoItem> listaItens = pedidoItemRepository.findAll().stream().filter(item -> {
+			return item.getProduto().getId().equals(produto.getId());
+		}).toList();
+
+		assertEquals(1, listaItens.size());
+		assertEquals(6, listaItens.getFirst().getQuantidade());
+
+	}
+
+	@Test
+	public void naoDevePermitirPagamentoDePedidoJaPago() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
+		Pedido pedido = pedidoService.createOrder(dto);
+
+		PedidoDto pago = pedidoService.pay(pedido.getId());
+		assertEquals(StatusPedido.PAGO, pago.status());
+
+		assertThrows(IllegalArgumentException.class, () -> {
+			pedidoService.pay(pedido.getId());
+		});
+	}
+
+	@Test
+	public void naoDevePermitirPagamentoDePedidoCancelado() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		ItemPedidoDTO dto1 = new ItemPedidoDTO(null, produto.getId(), 1);
+		Pedido pedido1 = pedidoService.createOrder(dto1);
+
+		ItemPedidoDTO dto2 = new ItemPedidoDTO(null, produto.getId(), 10);
+		Pedido pedido2 = pedidoService.createOrder(dto2);
+		PedidoDto pedido2Pago = pedidoService.pay(pedido2.getId());
+		assertEquals(StatusPedido.PAGO, pedido2Pago.status());
+
+		PedidoDto pedido1Pago = pedidoService.pay(pedido1.getId());
+		assertEquals(StatusPedido.CANCELADO, pedido1Pago.status());
+
+		assertThrows(IllegalArgumentException.class, () -> {
+			pedidoService.pay(pedido1Pago.id());
+		});
+	}
+
+	private void trocarUsuarioAtual() {
+		Usuario usuario = new Usuario();
+		usuario.setNome("Outro Usuario");
+		usuario.setEmail("outro_usuario@email.com");
+		usuario.setSenha("senha");
+		usuario.setRoles(Set.of(roleRepository.findAll().getFirst()));
+		usuarioService.save(usuario);
+		Mockito.when(securityService.getCurrentUser()).thenReturn(usuario);
+	}
+
 
 }
