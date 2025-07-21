@@ -27,7 +27,6 @@ public class Pedido extends AuditableEntity implements Identifiable<UUID> {
 	@Column(name = "valor_total", nullable = false, precision = 10, scale = 2)
 	private BigDecimal valorTotal;
 
-	@Column(nullable = false)
 	private String observacao;
 
 }
