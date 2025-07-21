@@ -1,8 +1,8 @@
 package br.com.foursales.ecommerce.service;
 
 
-import br.com.foursales.ecommerce.dto.ItemPedidoDTO;
-import br.com.foursales.ecommerce.dto.PedidoDto;
+import br.com.foursales.ecommerce.dto.PedidoItemDto;
+import br.com.foursales.ecommerce.dto.PedidoResponseDto;
 import br.com.foursales.ecommerce.entity.*;
 import br.com.foursales.ecommerce.enums.StatusPedido;
 import br.com.foursales.ecommerce.repository.*;
@@ -96,11 +96,11 @@ public class PedidoServiceIntegrationTest {
 	public void deveCriarPedidoComProdutosValidos() {
 		Produto produto = produtoRepository.findAll().getFirst();
 
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 3);
+		PedidoItemDto dto = new PedidoItemDto(null, produto.getId(), 3);
 
 		assertDoesNotThrow(() -> {
-			Pedido pedido = pedidoService.createOrder(dto);
-			assertEquals(pedido.getValorTotal(), BigDecimal.valueOf(370.35));
+			PedidoResponseDto pedido = pedidoService.createOrder(dto);
+			assertEquals(pedido.valorTotal(), BigDecimal.valueOf(370.35));
 		});
 	}
 
@@ -108,16 +108,16 @@ public class PedidoServiceIntegrationTest {
 	public void deveAddProdutoNoPedido() {
 		List<Produto> produtos = produtoRepository.findAll();
 
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, produtos.get(0).getId(), 3);
-		Pedido pedido1 = pedidoService.createOrder(dto);
+		PedidoItemDto dto = new PedidoItemDto(null, produtos.get(0).getId(), 3);
+		PedidoResponseDto pedido1 = pedidoService.createOrder(dto);
 
-		assertEquals(pedido1.getValorTotal(), BigDecimal.valueOf(370.35));
+		assertEquals(pedido1.valorTotal(), BigDecimal.valueOf(370.35));
 
-		ItemPedidoDTO dto2 = new ItemPedidoDTO(pedido1.getId(), produtos.get(1).getId(), 3);
+		PedidoItemDto dto2 = new PedidoItemDto(pedido1.id(), produtos.get(1).getId(), 3);
 
 		assertDoesNotThrow(() -> {
-			Pedido pedido2 = pedidoService.createOrder(dto2);
-			assertEquals(pedido2.getValorTotal(), BigDecimal.valueOf(20737.35));
+			PedidoResponseDto pedido2 = pedidoService.createOrder(dto2);
+			assertEquals(pedido2.valorTotal(), BigDecimal.valueOf(20737.35));
 		});
 	}
 
@@ -125,12 +125,12 @@ public class PedidoServiceIntegrationTest {
 	public void naoDeveAddProdutoNoPedidoDeOutroUsuario() {
 		List<Produto> produtos = produtoRepository.findAll();
 
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, produtos.get(0).getId(), 3);
-		Pedido pedido1 = pedidoService.createOrder(dto);
+		PedidoItemDto dto = new PedidoItemDto(null, produtos.get(0).getId(), 3);
+		PedidoResponseDto pedido1 = pedidoService.createOrder(dto);
 
-		assertEquals(pedido1.getValorTotal(), BigDecimal.valueOf(370.35));
+		assertEquals(pedido1.valorTotal(), BigDecimal.valueOf(370.35));
 
-		ItemPedidoDTO dto2 = new ItemPedidoDTO(pedido1.getId(), produtos.get(1).getId(), 3);
+		PedidoItemDto dto2 = new PedidoItemDto(pedido1.id(), produtos.get(1).getId(), 3);
 
 		trocarUsuarioAtual();
 		assertThrows(IllegalArgumentException.class, () -> {
@@ -140,7 +140,7 @@ public class PedidoServiceIntegrationTest {
 
 	@Test
 	public void naoDeveCriarPedidoSemIdProduto() {
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, null, 3);
+		PedidoItemDto dto = new PedidoItemDto(null, null, 3);
 
 		assertThrows(IllegalArgumentException.class, () -> {
 			pedidoService.createOrder(dto);
@@ -150,7 +150,7 @@ public class PedidoServiceIntegrationTest {
 	@Test
 	public void naoDeveCriarPedidoSemQuantidadeProduto() {
 		List<Produto> produtos = produtoRepository.findAll();
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, produtos.getFirst().getId(), null);
+		PedidoItemDto dto = new PedidoItemDto(null, produtos.getFirst().getId(), null);
 
 		assertThrows(IllegalArgumentException.class, () -> {
 			pedidoService.createOrder(dto);
@@ -165,7 +165,7 @@ public class PedidoServiceIntegrationTest {
 		}
 
 		List<Produto> produtos = produtoRepository.findAll();
-		ItemPedidoDTO dto = new ItemPedidoDTO(id, produtos.getFirst().getId(), 1);
+		PedidoItemDto dto = new PedidoItemDto(id, produtos.getFirst().getId(), 1);
 
 		assertThrows(EntityNotFoundException.class, () -> {
 			pedidoService.createOrder(dto);
@@ -175,7 +175,7 @@ public class PedidoServiceIntegrationTest {
 	@Test
 	public void naoDeveCriarPedidoComEstoqueInsuficiente() {
 		List<Produto> produtos = produtoRepository.findAll();
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, produtos.getFirst().getId(), 100);
+		PedidoItemDto dto = new PedidoItemDto(null, produtos.getFirst().getId(), 100);
 
 		assertThrows(IllegalArgumentException.class, () -> {
 			pedidoService.createOrder(dto);
@@ -185,11 +185,11 @@ public class PedidoServiceIntegrationTest {
 	@Test
 	public void devePagarPedido() {
 		Produto produto = produtoRepository.findAll().getFirst();
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
-		Pedido pedido = pedidoService.createOrder(dto);
+		PedidoItemDto dto = new PedidoItemDto(null, produto.getId(), 1);
+		PedidoResponseDto pedido = pedidoService.createOrder(dto);
 
 		assertDoesNotThrow(() -> {
-			PedidoDto pago = pedidoService.pay(pedido.getId());
+			PedidoResponseDto pago = pedidoService.pay(pedido.id());
 			assertEquals(StatusPedido.PAGO, pago.status());
 		});
 	}
@@ -197,20 +197,20 @@ public class PedidoServiceIntegrationTest {
 	@Test
 	public void naoDevePagarPedidoDeOutroUsuario() {
 		Produto produto = produtoRepository.findAll().getFirst();
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
-		Pedido pedido = pedidoService.createOrder(dto);
+		PedidoItemDto dto = new PedidoItemDto(null, produto.getId(), 1);
+		PedidoResponseDto pedido = pedidoService.createOrder(dto);
 
 		trocarUsuarioAtual();
 
 		assertThrows(IllegalArgumentException.class, () -> {
-			pedidoService.pay(pedido.getId());
+			pedidoService.pay(pedido.id());
 		});
 	}
 
 	@Test
 	public void naoDevePagarPedidoIdInvalido() {
 		Produto produto = produtoRepository.findAll().getFirst();
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
+		PedidoItemDto dto = new PedidoItemDto(null, produto.getId(), 1);
 		pedidoService.createOrder(dto);
 
 		assertThrows(EntityNotFoundException.class, () -> {
@@ -227,14 +227,14 @@ public class PedidoServiceIntegrationTest {
 	@Test
 	public void deveReduzirEstoqueAposVenda() {
 		Produto produto = produtoRepository.findAll().getFirst();
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
-		Pedido pedido = pedidoService.createOrder(dto);
+		PedidoItemDto dto = new PedidoItemDto(null, produto.getId(), 1);
+		PedidoResponseDto pedido = pedidoService.createOrder(dto);
 
 		Integer quantidadeEsperada = produto.getQuantidadeEmEstoque() - 1;
 
-		assertEquals(pedido.getValorTotal(), BigDecimal.valueOf(123.45));
+		assertEquals(pedido.valorTotal(), BigDecimal.valueOf(123.45));
 
-		PedidoDto pago = pedidoService.pay(pedido.getId());
+		PedidoResponseDto pago = pedidoService.pay(pedido.id());
 		assertEquals(StatusPedido.PAGO, pago.status());
 
 		Integer novaQuantidade = produtoRepository.findById(produto.getId()).get().getQuantidadeEmEstoque();
@@ -244,67 +244,67 @@ public class PedidoServiceIntegrationTest {
 	@Test
 	public void deveCancelarPedido() {
 		Produto produto = produtoRepository.findAll().getFirst();
-		ItemPedidoDTO dto1 = new ItemPedidoDTO(null, produto.getId(), 1);
-		Pedido pedido1 = pedidoService.createOrder(dto1);
-		assertEquals(pedido1.getValorTotal(), BigDecimal.valueOf(123.45));
+		PedidoItemDto dto1 = new PedidoItemDto(null, produto.getId(), 1);
+		PedidoResponseDto pedido1 = pedidoService.createOrder(dto1);
+		assertEquals(pedido1.valorTotal(), BigDecimal.valueOf(123.45));
 
-		ItemPedidoDTO dto2 = new ItemPedidoDTO(null, produto.getId(), 10);
-		Pedido pedido2 = pedidoService.createOrder(dto2);
-		assertEquals(pedido2.getValorTotal(), BigDecimal.valueOf(123450, 2));
+		PedidoItemDto dto2 = new PedidoItemDto(null, produto.getId(), 10);
+		PedidoResponseDto pedido2 = pedidoService.createOrder(dto2);
+		assertEquals(pedido2.valorTotal(), BigDecimal.valueOf(123450, 2));
 
-		PedidoDto pedido2Pago = pedidoService.pay(pedido2.getId());
+		PedidoResponseDto pedido2Pago = pedidoService.pay(pedido2.id());
 		assertEquals(StatusPedido.PAGO, pedido2Pago.status());
 
-		PedidoDto pedido1Pago = pedidoService.pay(pedido1.getId());
+		PedidoResponseDto pedido1Pago = pedidoService.pay(pedido1.id());
 		assertEquals(StatusPedido.CANCELADO, pedido1Pago.status());
 	}
 
 	@Test
 	public void deveCancelarPedidoPorSolicitante() {
 		Produto produto = produtoRepository.findAll().getFirst();
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
-		Pedido pedido = pedidoService.createOrder(dto);
+		PedidoItemDto dto = new PedidoItemDto(null, produto.getId(), 1);
+		PedidoResponseDto pedido = pedidoService.createOrder(dto);
 
-		pedidoService.cancel(pedido.getId());
+		pedidoService.cancel(pedido.id());
 
-		assertEquals(StatusPedido.CANCELADO, pedidoRepository.findById(pedido.getId()).get().getStatus());
+		assertEquals(StatusPedido.CANCELADO, pedidoRepository.findById(pedido.id()).get().getStatus());
 	}
 
 	@Test
 	public void naoDeveCancelarPedidoPagoPorSolicitante() {
 		Produto produto = produtoRepository.findAll().getFirst();
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
-		Pedido pedido = pedidoService.createOrder(dto);
-		pedidoService.pay(pedido.getId());
+		PedidoItemDto dto = new PedidoItemDto(null, produto.getId(), 1);
+		PedidoResponseDto pedido = pedidoService.createOrder(dto);
+		pedidoService.pay(pedido.id());
 
 		assertThrows(IllegalArgumentException.class, () -> {
-			pedidoService.cancel(pedido.getId());
+			pedidoService.cancel(pedido.id());
 		});
 	}
 
 	@Test
 	public void naoDeveCancelarPedidoCanceladoPorSolicitante() {
 		Produto produto = produtoRepository.findAll().getFirst();
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
-		Pedido pedido = pedidoService.createOrder(dto);
-		pedidoService.cancel(pedido.getId());
+		PedidoItemDto dto = new PedidoItemDto(null, produto.getId(), 1);
+		PedidoResponseDto pedido = pedidoService.createOrder(dto);
+		pedidoService.cancel(pedido.id());
 
 		assertThrows(IllegalArgumentException.class, () -> {
-			pedidoService.cancel(pedido.getId());
+			pedidoService.cancel(pedido.id());
 		});
 	}
 
 	@Test
 	public void naoDeveCancelarPedidoDeOutroUsuario() {
 		Produto produto = produtoRepository.findAll().getFirst();
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
-		Pedido pedido = pedidoService.createOrder(dto);
-		pedidoService.pay(pedido.getId());
+		PedidoItemDto dto = new PedidoItemDto(null, produto.getId(), 1);
+		PedidoResponseDto pedido = pedidoService.createOrder(dto);
+		pedidoService.pay(pedido.id());
 
 		trocarUsuarioAtual();
 
 		assertThrows(IllegalArgumentException.class, () -> {
-			pedidoService.cancel(pedido.getId());
+			pedidoService.cancel(pedido.id());
 		});
 	}
 
@@ -312,15 +312,15 @@ public class PedidoServiceIntegrationTest {
 	public void naoDeveCriarMesmoProdutoDuasVezesNoMesmoPedido() {
 		Produto produto = produtoRepository.findAll().getFirst();
 
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 3);
-		Pedido pedido = pedidoService.createOrder(dto);
+		PedidoItemDto dto = new PedidoItemDto(null, produto.getId(), 3);
+		PedidoResponseDto pedido = pedidoService.createOrder(dto);
 
-		assertEquals(pedido.getValorTotal(), BigDecimal.valueOf(370.35));
+		assertEquals(pedido.valorTotal(), BigDecimal.valueOf(370.35));
 
-		ItemPedidoDTO dto2 = new ItemPedidoDTO(pedido.getId(), produto.getId(), 3);
+		PedidoItemDto dto2 = new PedidoItemDto(pedido.id(), produto.getId(), 3);
 		pedido = pedidoService.createOrder(dto2);
 
-		assertEquals(pedido.getValorTotal(), BigDecimal.valueOf(74070, 2));
+		assertEquals(pedido.valorTotal(), BigDecimal.valueOf(74070, 2));
 
 		List<PedidoItem> listaItens = pedidoItemRepository.findAll().stream().filter(item -> {
 			return item.getProduto().getId().equals(produto.getId());
@@ -334,29 +334,29 @@ public class PedidoServiceIntegrationTest {
 	@Test
 	public void naoDevePermitirPagamentoDePedidoJaPago() {
 		Produto produto = produtoRepository.findAll().getFirst();
-		ItemPedidoDTO dto = new ItemPedidoDTO(null, produto.getId(), 1);
-		Pedido pedido = pedidoService.createOrder(dto);
+		PedidoItemDto dto = new PedidoItemDto(null, produto.getId(), 1);
+		PedidoResponseDto pedido = pedidoService.createOrder(dto);
 
-		PedidoDto pago = pedidoService.pay(pedido.getId());
+		PedidoResponseDto pago = pedidoService.pay(pedido.id());
 		assertEquals(StatusPedido.PAGO, pago.status());
 
 		assertThrows(IllegalArgumentException.class, () -> {
-			pedidoService.pay(pedido.getId());
+			pedidoService.pay(pedido.id());
 		});
 	}
 
 	@Test
 	public void naoDevePermitirPagamentoDePedidoCancelado() {
 		Produto produto = produtoRepository.findAll().getFirst();
-		ItemPedidoDTO dto1 = new ItemPedidoDTO(null, produto.getId(), 1);
-		Pedido pedido1 = pedidoService.createOrder(dto1);
+		PedidoItemDto dto1 = new PedidoItemDto(null, produto.getId(), 1);
+		PedidoResponseDto pedido1 = pedidoService.createOrder(dto1);
 
-		ItemPedidoDTO dto2 = new ItemPedidoDTO(null, produto.getId(), 10);
-		Pedido pedido2 = pedidoService.createOrder(dto2);
-		PedidoDto pedido2Pago = pedidoService.pay(pedido2.getId());
+		PedidoItemDto dto2 = new PedidoItemDto(null, produto.getId(), 10);
+		PedidoResponseDto pedido2 = pedidoService.createOrder(dto2);
+		PedidoResponseDto pedido2Pago = pedidoService.pay(pedido2.id());
 		assertEquals(StatusPedido.PAGO, pedido2Pago.status());
 
-		PedidoDto pedido1Pago = pedidoService.pay(pedido1.getId());
+		PedidoResponseDto pedido1Pago = pedidoService.pay(pedido1.id());
 		assertEquals(StatusPedido.CANCELADO, pedido1Pago.status());
 
 		assertThrows(IllegalArgumentException.class, () -> {
