@@ -30,8 +30,8 @@ public class RelatorioController {
 	}
 
 	@GetMapping("/faturamento-mensal")
-	public FaturamentoMensalDto getFaturamentoMensal() {
-		return relatorioService.calcularFaturamentoMensal();
+	public ResponseEntity<FaturamentoMensalDto> faturamentoMensal() {
+		return ResponseEntity.ok(relatorioService.calcularFaturamentoMensal());
 	}
 
 }
