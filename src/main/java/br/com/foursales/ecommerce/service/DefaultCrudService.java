@@ -1,7 +1,9 @@
 package br.com.foursales.ecommerce.service;
 
+import br.com.foursales.ecommerce.exception.DefaultApiException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Field;
@@ -37,11 +39,11 @@ public abstract class DefaultCrudService<T, ID> {
 	@Transactional
 	public T update(ID id, T updatedEntity) {
 		if (id == null) {
-			throw new IllegalArgumentException("ID não pode ser nulo");
+			throw new DefaultApiException("ID não pode ser nulo", HttpStatus.BAD_REQUEST);
 		}
 
 		if (!getRepository().existsById(id)) {
-			throw new EntityNotFoundException("Entity not found with ID: " + id);
+			throw new EntityNotFoundException("Entity não encontrada para o ID: " + id);
 		}
 
 		updatedEntity = getEntity(updatedEntity, id);
@@ -63,11 +65,11 @@ public abstract class DefaultCrudService<T, ID> {
 	@Transactional
 	public void delete(ID id) {
 		if (id == null) {
-			throw new IllegalArgumentException("ID não pode ser nulo");
+			throw new DefaultApiException("ID não pode ser nulo", HttpStatus.BAD_REQUEST);
 		}
 
 		if (!getRepository().existsById(id)) {
-			throw new EntityNotFoundException("Entity not found with ID: " + id);
+			throw new EntityNotFoundException("Entity não encontrada para o ID: " + id);
 		}
 
 		T entity = get(id);
@@ -90,7 +92,7 @@ public abstract class DefaultCrudService<T, ID> {
 			field.set(entity, id);
 			return entity;
 		} catch (Exception e) {
-			throw new RuntimeException("Erro ao obter entidade " + entity.getClass().getSimpleName(), e);
+			throw new DefaultApiException("Erro ao obter entidade " + entity.getClass().getSimpleName());
 		}
 	}
 

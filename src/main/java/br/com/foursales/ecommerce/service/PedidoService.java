@@ -5,6 +5,7 @@ import br.com.foursales.ecommerce.entity.Pedido;
 import br.com.foursales.ecommerce.entity.PedidoItem;
 import br.com.foursales.ecommerce.entity.Produto;
 import br.com.foursales.ecommerce.enums.StatusPedido;
+import br.com.foursales.ecommerce.exception.DefaultApiException;
 import br.com.foursales.ecommerce.mappers.PedidoMapper;
 import br.com.foursales.ecommerce.repository.PedidoItemRepository;
 import br.com.foursales.ecommerce.repository.PedidoRepository;
@@ -12,6 +13,7 @@ import br.com.foursales.ecommerce.service.security.SecurityService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,10 +63,10 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 
 	protected Produto getProduto(PedidoItemDto dto) {
 		if (dto.idProduto() == null) {
-			throw new IllegalArgumentException("Necessario informar o ID do produto.");
+			throw new DefaultApiException("Necessario informar o ID do produto.", HttpStatus.BAD_REQUEST);
 		}
 		if (dto.quantidade() == null || dto.quantidade() < 1) {
-			throw new IllegalArgumentException("Necessario informar uma quantidade valida para o produto.");
+			throw new DefaultApiException("Necessario informar uma quantidade valida para o produto.", HttpStatus.BAD_REQUEST);
 		}
 
 		Produto produto = produtoService.get(dto.idProduto());
@@ -73,7 +75,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 		}
 
 		if (dto.quantidade() > produto.getQuantidadeEmEstoque()) {
-			throw new IllegalArgumentException("Quantidade de estoque insuficiente");
+			throw new DefaultApiException("Quantidade de estoque insuficiente", HttpStatus.UNPROCESSABLE_ENTITY);
 		}
 
 		return produto;
@@ -86,7 +88,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 		if (pedidoItemDto.idPedido() != null) {
 			pedido = get(pedidoItemDto.idPedido());
 			if (pedido == null) {
-				throw new EntityNotFoundException("Entity not found with ID: " + pedidoItemDto.idPedido());
+				throw new EntityNotFoundException("Produto não encontrado com o ID: " + pedidoItemDto.idPedido());
 			}
 			checkCanManipulatePedido(pedido);
 		} else {
@@ -169,7 +171,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 
 	private Pedido getEntity(UUID uuid) {
 		if (uuid == null) {
-			throw new IllegalArgumentException("Necessario informar o ID do Pedido.");
+			throw new DefaultApiException("Necessario informar o ID do Pedido.", HttpStatus.BAD_REQUEST);
 		}
 
 		Pedido pedido = get(uuid);
@@ -182,15 +184,15 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 
 	public void checkCanManipulatePedido(Pedido pedido) {
 		if (!pedido.getUsuario().equals(securityService.getCurrentUser())) {
-			throw new IllegalArgumentException("Não pode manipular o pedido de outro usuário.");
+			throw new DefaultApiException("Não pode manipular o pedido de outro usuário.", HttpStatus.BAD_REQUEST);
 		}
 
 		if (pedido.getStatus() == StatusPedido.PAGO) {
-			throw new IllegalArgumentException("O pagamento do pedido já foi realizado.");
+			throw new DefaultApiException("O pagamento do pedido já foi realizado.", HttpStatus.BAD_REQUEST);
 		}
 
 		if (pedido.getStatus() == StatusPedido.CANCELADO) {
-			throw new IllegalArgumentException("O pedido já foi cancelado.");
+			throw new DefaultApiException("O pedido já foi cancelado.", HttpStatus.BAD_REQUEST);
 		}
 	}
 
