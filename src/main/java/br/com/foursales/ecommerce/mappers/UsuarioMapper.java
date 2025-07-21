@@ -48,7 +48,7 @@ public abstract class UsuarioMapper implements GenericMapper<Usuario, UsuarioDto
 	@Override
 	public UsuarioResponseDto toResponse(Usuario entity) {
 		List<RoleResponseDto> roleResponses = entity.getRoles().stream()
-				.map(role -> new RoleResponseDto(role.getNome()))
+				.map(role -> new RoleResponseDto(role.getId(), role.getNome()))
 				.toList();
 
 		return new UsuarioResponseDto(entity.getId(), entity.getNome(), entity.getEmail(), roleResponses);
