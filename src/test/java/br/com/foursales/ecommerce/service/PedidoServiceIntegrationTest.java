@@ -173,6 +173,37 @@ public class PedidoServiceIntegrationTest {
 	}
 
 	@Test
+	public void naoDeveAddProdutoNoPedidoPago() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		PedidoItemDto dto = new PedidoItemDto(null, produto.getId(), 1);
+		PedidoResponseDto pedido = pedidoService.createOrder(dto);
+
+		PedidoResponseDto pago = pedidoService.pay(pedido.id());
+		assertEquals(StatusPedido.PAGO, pago.status());
+
+		assertThrows(IllegalArgumentException.class, () -> {
+			pedidoService.createOrder(new PedidoItemDto(pedido.id(), produto.getId(), 1));
+		});
+	}
+
+	@Test
+	public void naoDeveAddProdutoNoPedidoCancelado() {
+		Produto produto = produtoRepository.findAll().getFirst();
+		PedidoItemDto dto = new PedidoItemDto(null, produto.getId(), 1);
+		PedidoResponseDto pedido = pedidoService.createOrder(dto);
+
+		pedidoService.cancel(pedido.id());
+
+		UUID idPedido = pedido.id();
+
+		assertEquals(StatusPedido.CANCELADO, pedidoService.get(idPedido).getStatus());
+
+		assertThrows(IllegalArgumentException.class, () -> {
+			pedidoService.createOrder(new PedidoItemDto(idPedido, produto.getId(), 1));
+		});
+	}
+
+	@Test
 	public void naoDeveCriarPedidoComEstoqueInsuficiente() {
 		List<Produto> produtos = produtoRepository.findAll();
 		PedidoItemDto dto = new PedidoItemDto(null, produtos.getFirst().getId(), 100);

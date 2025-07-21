@@ -88,9 +88,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 			if (pedido == null) {
 				throw new EntityNotFoundException("Entity not found with ID: " + pedidoItemDto.idPedido());
 			}
-			if (!pedido.getUsuario().equals(securityService.getCurrentUser())) {
-				throw new IllegalArgumentException("Não pode manipular o pedido de outro usuário.");
-			}
+			checkCanManipulatePedido(pedido);
 		} else {
 			pedido = new Pedido();
 			BigDecimal valorTotal = produto.getPreco().multiply(BigDecimal.valueOf(pedidoItemDto.quantidade()));
@@ -148,7 +146,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 	protected Pedido validatePedidoBeforePay(UUID idPedido) {
 		Pedido pedido = getEntity(idPedido);
 
-		verifyCanChangeStatus(pedido);
+		checkCanManipulatePedido(pedido);
 
 		for (PedidoItem item : pedidoItemRepository.findByPedido(pedido)) {
 			if (item.getQuantidade() > item.getProduto().getQuantidadeEmEstoque()) {
@@ -182,7 +180,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 		return pedido;
 	}
 
-	public void verifyCanChangeStatus(Pedido pedido) {
+	public void checkCanManipulatePedido(Pedido pedido) {
 		if (!pedido.getUsuario().equals(securityService.getCurrentUser())) {
 			throw new IllegalArgumentException("Não pode manipular o pedido de outro usuário.");
 		}
@@ -199,7 +197,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 	public void cancel(UUID idPedido) {
 		Pedido pedido = getEntity(idPedido);
 
-		verifyCanChangeStatus(pedido);
+		checkCanManipulatePedido(pedido);
 
 		pedido.setStatus(StatusPedido.CANCELADO);
 		update(pedido.getId(), pedido);
