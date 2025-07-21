@@ -6,6 +6,7 @@ import br.com.foursales.ecommerce.entity.PedidoItem;
 import br.com.foursales.ecommerce.entity.Produto;
 import br.com.foursales.ecommerce.enums.StatusPedido;
 import br.com.foursales.ecommerce.exception.DefaultApiException;
+import br.com.foursales.ecommerce.exception.EstoqueInsuficiente;
 import br.com.foursales.ecommerce.mappers.PedidoMapper;
 import br.com.foursales.ecommerce.repository.PedidoItemRepository;
 import br.com.foursales.ecommerce.repository.PedidoRepository;
@@ -38,27 +39,31 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 
 	@Transactional
 	public PedidoResponseDto createOrder(PedidoItemDto dto) {
-		Produto produto = getProduto(dto);
-		Pedido pedido = getPedido(dto, produto);
+		try {
+			Produto produto = getProduto(dto);
+			Pedido pedido = getPedido(dto, produto);
 
-		PedidoItem pedidoItem = pedidoItemRepository.findByPedidoAndProduto(pedido, produto);
+			PedidoItem pedidoItem = pedidoItemRepository.findByPedidoAndProduto(pedido, produto);
 
-		if (pedidoItem == null) {
-			pedidoItem = new PedidoItem();
-			pedidoItem.setPedido(pedido);
-			pedidoItem.setProduto(produto);
-			pedidoItem.setQuantidade(dto.quantidade());
-		} else {
-			pedidoItem.setQuantidade(pedidoItem.getQuantidade() + dto.quantidade());
+			if (pedidoItem == null) {
+				pedidoItem = new PedidoItem();
+				pedidoItem.setPedido(pedido);
+				pedidoItem.setProduto(produto);
+				pedidoItem.setQuantidade(dto.quantidade());
+			} else {
+				pedidoItem.setQuantidade(pedidoItem.getQuantidade() + dto.quantidade());
+			}
+
+			pedidoItem.setPrecoUnitario(produto.getPreco());
+
+			pedidoItemRepository.save(pedidoItem);
+
+			update(pedido.getId(), pedido);
+
+			return pedidoMapper.toResponse(pedido);
+		} catch (EstoqueInsuficiente e) {
+			return pedidoMapper.toResponse(e.getPedido());
 		}
-
-		pedidoItem.setPrecoUnitario(produto.getPreco());
-
-		pedidoItemRepository.save(pedidoItem);
-
-		update(pedido.getId(), pedido);
-
-		return pedidoMapper.toResponse(pedido);
 	}
 
 	protected Produto getProduto(PedidoItemDto dto) {
@@ -74,8 +79,13 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 			throw new EntityNotFoundException("Produto não encontrado com o ID: " + dto.idProduto());
 		}
 
-		if (dto.quantidade() > produto.getQuantidadeEmEstoque()) {
-			throw new DefaultApiException("Quantidade de estoque insuficiente", HttpStatus.UNPROCESSABLE_ENTITY);
+		Pedido pedido = getPedido(dto, produto);
+		PedidoItem pedidoItem = pedidoItemRepository.findByPedidoAndProduto(pedido, produto);
+		if ((dto.quantidade() + pedidoItem.getQuantidade()) > produto.getQuantidadeEmEstoque()) {
+			pedido.setStatus(StatusPedido.CANCELADO);
+			pedido.setObservacao("Quantidade de estoque insuficiente. Pedido cancelado.");
+			update(pedido.getId(), pedido);
+			throw new EstoqueInsuficiente(pedido);
 		}
 
 		return produto;

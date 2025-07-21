@@ -11,6 +11,7 @@ public record PedidoResponseDto(
 		UsuarioResponseDto usuario,
 		StatusPedido status,
 		List<PedidoItemResponseDto> itens,
-		BigDecimal valorTotal
+		BigDecimal valorTotal,
+		String observacao
 ) {
 }
