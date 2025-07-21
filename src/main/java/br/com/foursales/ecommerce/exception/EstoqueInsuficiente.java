@@ -9,6 +9,10 @@ public class EstoqueInsuficiente extends DefaultApiException {
 
 	private Pedido pedido;
 
+	public EstoqueInsuficiente() {
+		super(MESSAGE, HttpStatus.UNPROCESSABLE_ENTITY);
+	}
+
 	public EstoqueInsuficiente(Pedido pedido) {
 		super(MESSAGE, HttpStatus.UNPROCESSABLE_ENTITY);
 		this.pedido = pedido;

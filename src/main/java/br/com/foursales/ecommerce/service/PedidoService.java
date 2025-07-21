@@ -8,6 +8,7 @@ import br.com.foursales.ecommerce.enums.StatusPedido;
 import br.com.foursales.ecommerce.exception.DefaultApiException;
 import br.com.foursales.ecommerce.exception.EstoqueInsuficiente;
 import br.com.foursales.ecommerce.mappers.PedidoMapper;
+import br.com.foursales.ecommerce.mappers.UsuarioMapper;
 import br.com.foursales.ecommerce.repository.PedidoItemRepository;
 import br.com.foursales.ecommerce.repository.PedidoRepository;
 import br.com.foursales.ecommerce.service.security.SecurityService;
@@ -31,6 +32,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 	private final PedidoItemRepository pedidoItemRepository;
 	private final SecurityService securityService;
 	private final PedidoMapper pedidoMapper;
+	private final UsuarioMapper usuarioMapper;
 
 	@Override
 	protected JpaRepository<Pedido, UUID> getRepository() {
@@ -62,7 +64,17 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 
 			return pedidoMapper.toResponse(pedido);
 		} catch (EstoqueInsuficiente e) {
-			return pedidoMapper.toResponse(e.getPedido());
+			if (e.getPedido() != null) {
+				return pedidoMapper.toResponse(e.getPedido());
+			}
+			return new PedidoResponseDto(
+					null,
+					usuarioMapper.toResponse(securityService.getCurrentUser()),
+					StatusPedido.CANCELADO,
+					List.of(),
+					BigDecimal.ZERO,
+					e.getMessage()
+			);
 		}
 	}
 
@@ -87,11 +99,14 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 		}
 
 		if (total > produto.getQuantidadeEmEstoque()) {
-			Pedido pedido = get(dto.idPedido());
-			pedido.setStatus(StatusPedido.CANCELADO);
-			pedido.setObservacao(EstoqueInsuficiente.MESSAGE);
-			update(pedido.getId(), pedido);
-			throw new EstoqueInsuficiente(pedido);
+			if (dto.idPedido() != null) {
+				Pedido pedido = get(dto.idPedido());
+				pedido.setStatus(StatusPedido.CANCELADO);
+				pedido.setObservacao(EstoqueInsuficiente.MESSAGE);
+				update(pedido.getId(), pedido);
+				throw new EstoqueInsuficiente(pedido);
+			}
+			throw new EstoqueInsuficiente();
 		}
 
 		return produto;
