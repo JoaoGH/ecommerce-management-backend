@@ -5,8 +5,7 @@ import br.com.foursales.ecommerce.entity.Pedido;
 import br.com.foursales.ecommerce.entity.PedidoItem;
 import br.com.foursales.ecommerce.entity.Produto;
 import br.com.foursales.ecommerce.enums.StatusPedido;
-import br.com.foursales.ecommerce.mappers.ProdutoMapper;
-import br.com.foursales.ecommerce.mappers.UsuarioMapper;
+import br.com.foursales.ecommerce.mappers.PedidoMapper;
 import br.com.foursales.ecommerce.repository.PedidoItemRepository;
 import br.com.foursales.ecommerce.repository.PedidoRepository;
 import br.com.foursales.ecommerce.service.security.SecurityService;
@@ -17,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,8 +27,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 	private final ProdutoService produtoService;
 	private final PedidoItemRepository pedidoItemRepository;
 	private final SecurityService securityService;
-	private final UsuarioMapper usuarioMapper;
-	private final ProdutoMapper produtoMapper;
+	private final PedidoMapper pedidoMapper;
 
 	@Override
 	protected JpaRepository<Pedido, UUID> getRepository() {
@@ -59,27 +56,8 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 
 		update(pedido.getId(), pedido);
 
-		return buildResponse(pedido);
+		return pedidoMapper.toResponse(pedido);
 	}
-
-	public PedidoResponseDto buildResponse(Pedido pedido) {
-		List<PedidoItemResponseDto> itens = pedidoItemRepository.findByPedido(pedido)
-				.stream()
-				.map(item -> new PedidoItemResponseDto(
-						produtoMapper.toResponse(item.getProduto()),
-						item.getQuantidade(),
-						item.getPrecoUnitario()
-				)).toList();
-
-		return new PedidoResponseDto(
-				pedido.getId(),
-				usuarioMapper.toResponse(pedido.getUsuario()),
-				pedido.getStatus(),
-				itens,
-				pedido.getValorTotal()
-		);
-	}
-
 
 	protected Produto getProduto(PedidoItemDto dto) {
 		if (dto.idProduto() == null) {
@@ -152,7 +130,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 		List<PedidoItem> pedidoItems = pedidoItemRepository.findByPedido(pedido);
 
 		if (pedido.getStatus() == StatusPedido.CANCELADO) {
-			return buildResponse(pedido);
+			return pedidoMapper.toResponse(pedido);
 		}
 
 		pedido.setStatus(StatusPedido.PAGO);
@@ -164,7 +142,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 			produtoService.update(produto.getId(), produto);
 		}
 
-		return buildResponse(pedido);
+		return pedidoMapper.toResponse(pedido);
 	}
 
 	protected Pedido validatePedidoBeforePay(UUID idPedido) {
@@ -188,11 +166,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 	}
 
 	public List<PedidoResponseDto> listar() {
-		List<PedidoResponseDto> retorno = new ArrayList<>();
-		for (Pedido pedido : list()) {
-			retorno.add(buildResponse(pedido));
-		}
-		return retorno;
+		return pedidoMapper.toResponseList(list());
 	}
 
 	private Pedido getEntity(UUID uuid) {
@@ -230,6 +204,5 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 		pedido.setStatus(StatusPedido.CANCELADO);
 		update(pedido.getId(), pedido);
 	}
-
 
 }
