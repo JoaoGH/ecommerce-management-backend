@@ -79,9 +79,10 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 			throw new EntityNotFoundException("Produto não encontrado com o ID: " + dto.idProduto());
 		}
 
-		Pedido pedido = getPedido(dto, produto);
+		Pedido pedido = get(dto.idPedido());
 		PedidoItem pedidoItem = pedidoItemRepository.findByPedidoAndProduto(pedido, produto);
-		if ((dto.quantidade() + pedidoItem.getQuantidade()) > produto.getQuantidadeEmEstoque()) {
+		int total = pedidoItem != null ? dto.quantidade() + pedidoItem.getQuantidade() : dto.quantidade();
+		if (total > produto.getQuantidadeEmEstoque()) {
 			pedido.setStatus(StatusPedido.CANCELADO);
 			pedido.setObservacao(EstoqueInsuficiente.MESSAGE);
 			update(pedido.getId(), pedido);
