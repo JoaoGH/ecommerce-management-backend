@@ -1,6 +1,7 @@
 package br.com.foursales.ecommerce.service;
 
 import br.com.foursales.ecommerce.entity.Produto;
+import br.com.foursales.ecommerce.exception.DefaultApiException;
 import br.com.foursales.ecommerce.repository.ProdutoRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -99,7 +100,7 @@ public class ProdutoServiceIntegrationTeste {
 			produtoService.update(finalId, new Produto());
 		});
 
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			produtoService.update(null, new Produto());
 		});
 	}
@@ -193,7 +194,7 @@ public class ProdutoServiceIntegrationTeste {
 			produtoService.delete(finalId);
 		});
 
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			produtoService.delete(null);
 		});
 	}

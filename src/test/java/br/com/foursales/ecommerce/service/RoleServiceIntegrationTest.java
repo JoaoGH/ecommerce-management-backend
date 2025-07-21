@@ -1,6 +1,7 @@
 package br.com.foursales.ecommerce.service;
 
 import br.com.foursales.ecommerce.entity.Role;
+import br.com.foursales.ecommerce.exception.DefaultApiException;
 import br.com.foursales.ecommerce.repository.RoleRepository;
 import br.com.foursales.ecommerce.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -145,7 +146,7 @@ public class RoleServiceIntegrationTest {
 
 	@Test
 	public void deveLancarExcecaoSeIdNuloAoExcluir() {
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			roleService.delete(null);
 		});
 	}
@@ -170,7 +171,7 @@ public class RoleServiceIntegrationTest {
 	public void deveLancarExcecaoSeIdNuloAoAtualizar() {
 		Role nova = new Role();
 
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			roleService.update(nova.getId(), nova);
 		});
 	}

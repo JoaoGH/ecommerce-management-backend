@@ -2,6 +2,7 @@ package br.com.foursales.ecommerce.service;
 
 import br.com.foursales.ecommerce.entity.Role;
 import br.com.foursales.ecommerce.entity.Usuario;
+import br.com.foursales.ecommerce.exception.DefaultApiException;
 import br.com.foursales.ecommerce.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,7 +86,7 @@ public class UsuarioServiceIntegrationTest {
 		novo.setSenha("duplicado");
 		novo.setRoles(Set.of(role));
 
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			usuarioService.save(novo);
 		});
 	}
@@ -99,12 +100,12 @@ public class UsuarioServiceIntegrationTest {
 		novo.setEmail("senha_vazia@email.com");
 		novo.setRoles(Set.of(role));
 
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			usuarioService.save(novo);
 		});
 
 		novo.setSenha("");
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			usuarioService.save(novo);
 		});
 	}
@@ -118,7 +119,7 @@ public class UsuarioServiceIntegrationTest {
 		novo.setSenha("invalido");
 		novo.setRoles(Set.of(role));
 
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			usuarioService.save(novo);
 		});
 	}
@@ -130,7 +131,7 @@ public class UsuarioServiceIntegrationTest {
 		novo.setEmail("sem_roles@email.com");
 		novo.setSenha("senha");
 
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			usuarioService.save(novo);
 		});
 	}
@@ -173,7 +174,7 @@ public class UsuarioServiceIntegrationTest {
 		usuario.setNome("Nome atualizado");
 		usuario.setEmail(usuarios.get(1).getEmail());
 
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			usuarioService.update(usuario.getId(), usuario);
 		});
 	}
@@ -202,7 +203,7 @@ public class UsuarioServiceIntegrationTest {
 			usuarioService.delete(finalId);
 		});
 
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			usuarioService.delete(null);
 		});
 	}

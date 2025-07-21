@@ -5,6 +5,8 @@ import br.com.foursales.ecommerce.dto.PedidoItemDto;
 import br.com.foursales.ecommerce.dto.PedidoResponseDto;
 import br.com.foursales.ecommerce.entity.*;
 import br.com.foursales.ecommerce.enums.StatusPedido;
+import br.com.foursales.ecommerce.exception.DefaultApiException;
+import br.com.foursales.ecommerce.exception.EstoqueInsuficiente;
 import br.com.foursales.ecommerce.repository.*;
 import br.com.foursales.ecommerce.service.security.SecurityService;
 import jakarta.persistence.EntityNotFoundException;
@@ -22,6 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -133,7 +136,7 @@ public class PedidoServiceIntegrationTest {
 		PedidoItemDto dto2 = new PedidoItemDto(pedido1.id(), produtos.get(1).getId(), 3);
 
 		trocarUsuarioAtual();
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			pedidoService.createOrder(dto2);
 		});
 	}
@@ -142,7 +145,7 @@ public class PedidoServiceIntegrationTest {
 	public void naoDeveCriarPedidoSemIdProduto() {
 		PedidoItemDto dto = new PedidoItemDto(null, null, 3);
 
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			pedidoService.createOrder(dto);
 		});
 	}
@@ -152,7 +155,7 @@ public class PedidoServiceIntegrationTest {
 		List<Produto> produtos = produtoRepository.findAll();
 		PedidoItemDto dto = new PedidoItemDto(null, produtos.getFirst().getId(), null);
 
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			pedidoService.createOrder(dto);
 		});
 	}
@@ -181,7 +184,7 @@ public class PedidoServiceIntegrationTest {
 		PedidoResponseDto pago = pedidoService.pay(pedido.id());
 		assertEquals(StatusPedido.PAGO, pago.status());
 
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			pedidoService.createOrder(new PedidoItemDto(pedido.id(), produto.getId(), 1));
 		});
 	}
@@ -198,7 +201,7 @@ public class PedidoServiceIntegrationTest {
 
 		assertEquals(StatusPedido.CANCELADO, pedidoService.get(idPedido).getStatus());
 
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			pedidoService.createOrder(new PedidoItemDto(idPedido, produto.getId(), 1));
 		});
 	}
@@ -208,9 +211,8 @@ public class PedidoServiceIntegrationTest {
 		List<Produto> produtos = produtoRepository.findAll();
 		PedidoItemDto dto = new PedidoItemDto(null, produtos.getFirst().getId(), 100);
 
-		assertThrows(IllegalArgumentException.class, () -> {
-			pedidoService.createOrder(dto);
-		});
+		PedidoResponseDto responseDto = pedidoService.createOrder(dto);
+		assertEquals(EstoqueInsuficiente.MESSAGE, responseDto.observacao());
 	}
 
 	@Test
@@ -233,7 +235,7 @@ public class PedidoServiceIntegrationTest {
 
 		trocarUsuarioAtual();
 
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			pedidoService.pay(pedido.id());
 		});
 	}
@@ -252,7 +254,7 @@ public class PedidoServiceIntegrationTest {
 			pedidoService.pay(id);
 		});
 
-		assertThrows(IllegalArgumentException.class, () -> pedidoService.pay(null));
+		assertThrows(DefaultApiException.class, () -> pedidoService.pay(null));
 	}
 
 	@Test
@@ -279,15 +281,16 @@ public class PedidoServiceIntegrationTest {
 		PedidoResponseDto pedido1 = pedidoService.createOrder(dto1);
 		assertEquals(pedido1.valorTotal(), BigDecimal.valueOf(123.45));
 
-		PedidoItemDto dto2 = new PedidoItemDto(null, produto.getId(), 10);
+		PedidoItemDto dto2 = new PedidoItemDto(null, produto.getId(), 1);
 		PedidoResponseDto pedido2 = pedidoService.createOrder(dto2);
-		assertEquals(pedido2.valorTotal(), BigDecimal.valueOf(123450, 2));
+		assertEquals(pedido2.valorTotal(), BigDecimal.valueOf(12345, 2));
 
 		PedidoResponseDto pedido2Pago = pedidoService.pay(pedido2.id());
 		assertEquals(StatusPedido.PAGO, pedido2Pago.status());
 
-		PedidoResponseDto pedido1Pago = pedidoService.pay(pedido1.id());
-		assertEquals(StatusPedido.CANCELADO, pedido1Pago.status());
+		assertThrows(DefaultApiException.class, () -> {
+			pedidoService.pay(pedido1.id());
+		});
 	}
 
 	@Test
@@ -308,7 +311,7 @@ public class PedidoServiceIntegrationTest {
 		PedidoResponseDto pedido = pedidoService.createOrder(dto);
 		pedidoService.pay(pedido.id());
 
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			pedidoService.cancel(pedido.id());
 		});
 	}
@@ -320,7 +323,7 @@ public class PedidoServiceIntegrationTest {
 		PedidoResponseDto pedido = pedidoService.createOrder(dto);
 		pedidoService.cancel(pedido.id());
 
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			pedidoService.cancel(pedido.id());
 		});
 	}
@@ -334,7 +337,7 @@ public class PedidoServiceIntegrationTest {
 
 		trocarUsuarioAtual();
 
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			pedidoService.cancel(pedido.id());
 		});
 	}
@@ -371,7 +374,7 @@ public class PedidoServiceIntegrationTest {
 		PedidoResponseDto pago = pedidoService.pay(pedido.id());
 		assertEquals(StatusPedido.PAGO, pago.status());
 
-		assertThrows(IllegalArgumentException.class, () -> {
+		assertThrows(DefaultApiException.class, () -> {
 			pedidoService.pay(pedido.id());
 		});
 	}
@@ -382,16 +385,13 @@ public class PedidoServiceIntegrationTest {
 		PedidoItemDto dto1 = new PedidoItemDto(null, produto.getId(), 1);
 		PedidoResponseDto pedido1 = pedidoService.createOrder(dto1);
 
-		PedidoItemDto dto2 = new PedidoItemDto(null, produto.getId(), 10);
+		PedidoItemDto dto2 = new PedidoItemDto(null, produto.getId(), 1);
 		PedidoResponseDto pedido2 = pedidoService.createOrder(dto2);
 		PedidoResponseDto pedido2Pago = pedidoService.pay(pedido2.id());
 		assertEquals(StatusPedido.PAGO, pedido2Pago.status());
 
-		PedidoResponseDto pedido1Pago = pedidoService.pay(pedido1.id());
-		assertEquals(StatusPedido.CANCELADO, pedido1Pago.status());
-
-		assertThrows(IllegalArgumentException.class, () -> {
-			pedidoService.pay(pedido1Pago.id());
+		assertThrows(DefaultApiException.class, () -> {
+			pedidoService.pay(pedido1.id());
 		});
 	}
 

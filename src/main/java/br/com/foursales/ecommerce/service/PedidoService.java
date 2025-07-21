@@ -6,7 +6,9 @@ import br.com.foursales.ecommerce.entity.PedidoItem;
 import br.com.foursales.ecommerce.entity.Produto;
 import br.com.foursales.ecommerce.enums.StatusPedido;
 import br.com.foursales.ecommerce.exception.DefaultApiException;
+import br.com.foursales.ecommerce.exception.EstoqueInsuficiente;
 import br.com.foursales.ecommerce.mappers.PedidoMapper;
+import br.com.foursales.ecommerce.mappers.UsuarioMapper;
 import br.com.foursales.ecommerce.repository.PedidoItemRepository;
 import br.com.foursales.ecommerce.repository.PedidoRepository;
 import br.com.foursales.ecommerce.service.security.SecurityService;
@@ -30,6 +32,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 	private final PedidoItemRepository pedidoItemRepository;
 	private final SecurityService securityService;
 	private final PedidoMapper pedidoMapper;
+	private final UsuarioMapper usuarioMapper;
 
 	@Override
 	protected JpaRepository<Pedido, UUID> getRepository() {
@@ -38,27 +41,41 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 
 	@Transactional
 	public PedidoResponseDto createOrder(PedidoItemDto dto) {
-		Produto produto = getProduto(dto);
-		Pedido pedido = getPedido(dto, produto);
+		try {
+			Produto produto = getProduto(dto);
+			Pedido pedido = getPedido(dto, produto);
 
-		PedidoItem pedidoItem = pedidoItemRepository.findByPedidoAndProduto(pedido, produto);
+			PedidoItem pedidoItem = pedidoItemRepository.findByPedidoAndProduto(pedido, produto);
 
-		if (pedidoItem == null) {
-			pedidoItem = new PedidoItem();
-			pedidoItem.setPedido(pedido);
-			pedidoItem.setProduto(produto);
-			pedidoItem.setQuantidade(dto.quantidade());
-		} else {
-			pedidoItem.setQuantidade(pedidoItem.getQuantidade() + dto.quantidade());
+			if (pedidoItem == null) {
+				pedidoItem = new PedidoItem();
+				pedidoItem.setPedido(pedido);
+				pedidoItem.setProduto(produto);
+				pedidoItem.setQuantidade(dto.quantidade());
+			} else {
+				pedidoItem.setQuantidade(pedidoItem.getQuantidade() + dto.quantidade());
+			}
+
+			pedidoItem.setPrecoUnitario(produto.getPreco());
+
+			pedidoItemRepository.save(pedidoItem);
+
+			update(pedido.getId(), pedido);
+
+			return pedidoMapper.toResponse(pedido);
+		} catch (EstoqueInsuficiente e) {
+			if (e.getPedido() != null) {
+				return pedidoMapper.toResponse(e.getPedido());
+			}
+			return new PedidoResponseDto(
+					null,
+					usuarioMapper.toResponse(securityService.getCurrentUser()),
+					StatusPedido.CANCELADO,
+					List.of(),
+					BigDecimal.ZERO,
+					e.getMessage()
+			);
 		}
-
-		pedidoItem.setPrecoUnitario(produto.getPreco());
-
-		pedidoItemRepository.save(pedidoItem);
-
-		update(pedido.getId(), pedido);
-
-		return pedidoMapper.toResponse(pedido);
 	}
 
 	protected Produto getProduto(PedidoItemDto dto) {
@@ -74,8 +91,22 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 			throw new EntityNotFoundException("Produto não encontrado com o ID: " + dto.idProduto());
 		}
 
-		if (dto.quantidade() > produto.getQuantidadeEmEstoque()) {
-			throw new DefaultApiException("Quantidade de estoque insuficiente", HttpStatus.UNPROCESSABLE_ENTITY);
+		int total = dto.quantidade();
+		if (dto.idPedido() != null) {
+			Pedido pedido = get(dto.idPedido());
+			PedidoItem pedidoItem = pedidoItemRepository.findByPedidoAndProduto(pedido, produto);
+			total += pedidoItem != null ? pedidoItem.getQuantidade() : 0;
+		}
+
+		if (total > produto.getQuantidadeEmEstoque()) {
+			if (dto.idPedido() != null) {
+				Pedido pedido = get(dto.idPedido());
+				pedido.setStatus(StatusPedido.CANCELADO);
+				pedido.setObservacao(EstoqueInsuficiente.MESSAGE);
+				update(pedido.getId(), pedido);
+				throw new EstoqueInsuficiente(pedido);
+			}
+			throw new EstoqueInsuficiente();
 		}
 
 		return produto;
@@ -140,9 +171,19 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 			Produto produto = item.getProduto();
 			produto.setQuantidadeEmEstoque(produto.getQuantidadeEmEstoque() - item.getQuantidade());
 			produtoService.update(produto.getId(), produto);
+			cancelarOutroPedidos(pedido, produto);
 		}
 
 		return pedidoMapper.toResponse(pedido);
+	}
+
+	private void cancelarOutroPedidos(Pedido pedido, Produto produto) {
+		List<Pedido> pedidosParaCancelar = pedidoItemRepository.findAllByPedidoNotAndProduto(pedido, produto);
+		for (Pedido pedidoCancelar : pedidosParaCancelar) {
+			pedidoCancelar.setStatus(StatusPedido.CANCELADO);
+			pedidoCancelar.setObservacao(EstoqueInsuficiente.MESSAGE);
+			update(pedidoCancelar.getId(), pedidoCancelar);
+		}
 	}
 
 	protected Pedido validatePedidoBeforePay(UUID idPedido) {
