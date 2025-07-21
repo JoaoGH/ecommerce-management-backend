@@ -113,7 +113,7 @@ Consultas SQL otimizadas com os seguintes endpoints:
 
 ---
 
-## 🔐 Usuários para Testes
+## Usuários para Testes
 
 ```json
 ADMIN:
