@@ -1,8 +1,7 @@
 package br.com.foursales.ecommerce.controller;
 
-import br.com.foursales.ecommerce.dto.ItemPedidoDTO;
-import br.com.foursales.ecommerce.dto.PedidoDto;
-import br.com.foursales.ecommerce.entity.Pedido;
+import br.com.foursales.ecommerce.dto.PedidoItemDto;
+import br.com.foursales.ecommerce.dto.PedidoResponseDto;
 import br.com.foursales.ecommerce.service.PedidoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,18 +19,18 @@ public class PedidoController {
 	private final PedidoService pedidoService;
 
 	@PostMapping
-	public ResponseEntity<Pedido> add(@RequestBody ItemPedidoDTO dto) {
+	public ResponseEntity<PedidoResponseDto> add(@RequestBody PedidoItemDto dto) {
 		return ResponseEntity.ok(pedidoService.createOrder(dto));
 	}
 
-	@PutMapping
-	public ResponseEntity<PedidoDto> pay(@RequestBody UUID idPedido) {
-		return ResponseEntity.ok(pedidoService.pay(idPedido));
+	@PutMapping("/{id}")
+	public ResponseEntity<PedidoResponseDto> pay(@PathVariable UUID id) {
+		return ResponseEntity.ok(pedidoService.pay(id));
 	}
 
 	@GetMapping
-	public ResponseEntity<List<Pedido>> list() {
-		return ResponseEntity.ok(pedidoService.list());
+	public ResponseEntity<List<PedidoResponseDto>> list() {
+		return ResponseEntity.ok(pedidoService.listar());
 	}
 
 	@DeleteMapping("/{id}")

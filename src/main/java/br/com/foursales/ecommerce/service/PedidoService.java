@@ -1,11 +1,12 @@
 package br.com.foursales.ecommerce.service;
 
-import br.com.foursales.ecommerce.dto.ItemPedidoDTO;
-import br.com.foursales.ecommerce.dto.PedidoDto;
+import br.com.foursales.ecommerce.dto.*;
 import br.com.foursales.ecommerce.entity.Pedido;
 import br.com.foursales.ecommerce.entity.PedidoItem;
 import br.com.foursales.ecommerce.entity.Produto;
 import br.com.foursales.ecommerce.enums.StatusPedido;
+import br.com.foursales.ecommerce.mappers.ProdutoMapper;
+import br.com.foursales.ecommerce.mappers.UsuarioMapper;
 import br.com.foursales.ecommerce.repository.PedidoItemRepository;
 import br.com.foursales.ecommerce.repository.PedidoRepository;
 import br.com.foursales.ecommerce.service.security.SecurityService;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,6 +29,8 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 	private final ProdutoService produtoService;
 	private final PedidoItemRepository pedidoItemRepository;
 	private final SecurityService securityService;
+	private final UsuarioMapper usuarioMapper;
+	private final ProdutoMapper produtoMapper;
 
 	@Override
 	protected JpaRepository<Pedido, UUID> getRepository() {
@@ -34,7 +38,7 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 	}
 
 	@Transactional
-	public Pedido createOrder(ItemPedidoDTO dto) {
+	public PedidoResponseDto createOrder(PedidoItemDto dto) {
 		Produto produto = getProduto(dto);
 		Pedido pedido = getPedido(dto, produto);
 
@@ -55,10 +59,29 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 
 		update(pedido.getId(), pedido);
 
-		return pedido;
+		return buildResponse(pedido);
 	}
 
-	protected Produto getProduto(ItemPedidoDTO dto) {
+	public PedidoResponseDto buildResponse(Pedido pedido) {
+		List<PedidoItemResponseDto> itens = pedidoItemRepository.findByPedido(pedido)
+				.stream()
+				.map(item -> new PedidoItemResponseDto(
+						produtoMapper.toResponse(item.getProduto()),
+						item.getQuantidade(),
+						item.getPrecoUnitario()
+				)).toList();
+
+		return new PedidoResponseDto(
+				pedido.getId(),
+				usuarioMapper.toResponse(pedido.getUsuario()),
+				pedido.getStatus(),
+				itens,
+				pedido.getValorTotal()
+		);
+	}
+
+
+	protected Produto getProduto(PedidoItemDto dto) {
 		if (dto.idProduto() == null) {
 			throw new IllegalArgumentException("Necessario informar o ID do produto.");
 		}
@@ -79,20 +102,20 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 	}
 
 	@Transactional
-	protected Pedido getPedido(ItemPedidoDTO itemPedidoDTO, Produto produto) {
+	protected Pedido getPedido(PedidoItemDto pedidoItemDto, Produto produto) {
 		Pedido pedido;
 
-		if (itemPedidoDTO.idPedido() != null) {
-			pedido = get(itemPedidoDTO.idPedido());
+		if (pedidoItemDto.idPedido() != null) {
+			pedido = get(pedidoItemDto.idPedido());
 			if (pedido == null) {
-				throw new EntityNotFoundException("Entity not found with ID: " + itemPedidoDTO.idPedido());
+				throw new EntityNotFoundException("Entity not found with ID: " + pedidoItemDto.idPedido());
 			}
 			if (!pedido.getUsuario().equals(securityService.getCurrentUser())) {
 				throw new IllegalArgumentException("Não pode manipular o pedido de outro usuário.");
 			}
 		} else {
 			pedido = new Pedido();
-			BigDecimal valorTotal = produto.getPreco().multiply(BigDecimal.valueOf(itemPedidoDTO.quantidade()));
+			BigDecimal valorTotal = produto.getPreco().multiply(BigDecimal.valueOf(pedidoItemDto.quantidade()));
 			pedido.setValorTotal(valorTotal);
 			save(pedido);
 		}
@@ -123,36 +146,25 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 	}
 
 	@Transactional
-	public PedidoDto pay(UUID idPedido) {
+	public PedidoResponseDto pay(UUID idPedido) {
 		Pedido pedido = validatePedidoBeforePay(idPedido);
 
+		List<PedidoItem> pedidoItems = pedidoItemRepository.findByPedido(pedido);
+
 		if (pedido.getStatus() == StatusPedido.CANCELADO) {
-			PedidoDto pedidoDto = new PedidoDto(
-					pedido.getId(),
-					pedido.getUsuario(),
-					pedido.getStatus(),
-					pedido.getValorTotal()
-			);
-			return pedidoDto;
+			return buildResponse(pedido);
 		}
 
 		pedido.setStatus(StatusPedido.PAGO);
 		update(pedido.getId(), pedido);
 
-		for (PedidoItem item : pedidoItemRepository.findByPedido(pedido)) {
+		for (PedidoItem item : pedidoItems) {
 			Produto produto = item.getProduto();
 			produto.setQuantidadeEmEstoque(produto.getQuantidadeEmEstoque() - item.getQuantidade());
 			produtoService.update(produto.getId(), produto);
 		}
 
-		PedidoDto pedidoDto = new PedidoDto(
-				pedido.getId(),
-				pedido.getUsuario(),
-				pedido.getStatus(),
-				pedido.getValorTotal()
-		);
-
-		return pedidoDto;
+		return buildResponse(pedido);
 	}
 
 	protected Pedido validatePedidoBeforePay(UUID idPedido) {
@@ -173,6 +185,14 @@ public class PedidoService extends DefaultCrudService<Pedido, UUID> {
 	@Override
 	public List<Pedido> list() {
 		return pedidoRepository.findAllByUsuario(securityService.getCurrentUser());
+	}
+
+	public List<PedidoResponseDto> listar() {
+		List<PedidoResponseDto> retorno = new ArrayList<>();
+		for (Pedido pedido : list()) {
+			retorno.add(buildResponse(pedido));
+		}
+		return retorno;
 	}
 
 	private Pedido getEntity(UUID uuid) {

@@ -1,6 +1,7 @@
 package br.com.foursales.ecommerce.controller;
 
 import br.com.foursales.ecommerce.dto.RoleDto;
+import br.com.foursales.ecommerce.dto.RoleResponseDto;
 import br.com.foursales.ecommerce.entity.Role;
 import br.com.foursales.ecommerce.mappers.GenericMapper;
 import br.com.foursales.ecommerce.mappers.RoleMapper;
@@ -15,7 +16,7 @@ import java.util.UUID;
 @Controller
 @RequestMapping("/role")
 @RequiredArgsConstructor
-public class RoleController extends DefaultCrudController<Role, RoleDto, UUID> {
+public class RoleController extends DefaultCrudController<Role, RoleDto, RoleResponseDto, UUID> {
 
 	private final RoleService service;
 	private final RoleMapper mapper;
@@ -26,7 +27,7 @@ public class RoleController extends DefaultCrudController<Role, RoleDto, UUID> {
 	}
 
 	@Override
-	protected GenericMapper<Role, RoleDto> getMapper() {
+	protected GenericMapper<Role, RoleDto, RoleResponseDto> getMapper() {
 		return mapper;
 	}
 }

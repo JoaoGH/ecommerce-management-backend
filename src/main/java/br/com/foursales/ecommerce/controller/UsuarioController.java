@@ -1,6 +1,7 @@
 package br.com.foursales.ecommerce.controller;
 
 import br.com.foursales.ecommerce.dto.UsuarioDto;
+import br.com.foursales.ecommerce.dto.UsuarioResponseDto;
 import br.com.foursales.ecommerce.entity.Usuario;
 import br.com.foursales.ecommerce.mappers.GenericMapper;
 import br.com.foursales.ecommerce.mappers.UsuarioMapper;
@@ -15,7 +16,7 @@ import java.util.UUID;
 @Controller
 @RequestMapping("/usuario")
 @RequiredArgsConstructor
-public class UsuarioController extends DefaultCrudController<Usuario, UsuarioDto, UUID> {
+public class UsuarioController extends DefaultCrudController<Usuario, UsuarioDto, UsuarioResponseDto, UUID> {
 
 	private final UsuarioService service;
 	private final UsuarioMapper mapper;
@@ -26,7 +27,7 @@ public class UsuarioController extends DefaultCrudController<Usuario, UsuarioDto
 	}
 
 	@Override
-	protected GenericMapper<Usuario, UsuarioDto> getMapper() {
+	protected GenericMapper<Usuario, UsuarioDto, UsuarioResponseDto> getMapper() {
 		return mapper;
 	}
 
