@@ -36,7 +36,7 @@ public abstract class DefaultCrudController<
 	public ResponseEntity<?> save(@RequestBody @Valid DTO dto) {
 		T entity = getService().save(getMapper().toEntity(dto));
 		URI location = generateHeaderLocation(entity.getId());
-		return ResponseEntity.created(location).build();
+		return ResponseEntity.created(location).body(getMapper().toResponse(entity));
 	}
 
 	@PutMapping("/{id}")
